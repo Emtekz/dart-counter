@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Dart Counter – X01 Punktezähler für Desktop, Tablet und Smartphone">
+  <title>Dart Counter</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ===== Setup ===== -->
+  <section id="setup" class="screen">
+    <h1><img src="icon.svg" alt="" class="logo"> Dart Counter</h1>
+
+    <div class="card">
+      <h2>Spieler</h2>
+      <div id="player-list" class="player-list"></div>
+      <button id="add-player" class="btn secondary" type="button">+ Spieler hinzufügen</button>
+    </div>
+
+    <div class="card">
+      <h2>Spielmodus</h2>
+      <h3>Startpunkte</h3>
+      <div class="option-group" data-setting="start">
+        <button type="button" data-value="301">301</button>
+        <button type="button" data-value="501">501</button>
+        <button type="button" data-value="701">701</button>
+      </div>
+
+      <h3>Check-out</h3>
+      <div class="option-group" data-setting="outMode">
+        <button type="button" data-value="single">Single</button>
+        <button type="button" data-value="double">Double</button>
+        <button type="button" data-value="master">Master</button>
+      </div>
+
+      <h3>Legs zum Sieg (First to)</h3>
+      <div class="option-group" data-setting="legs">
+        <button type="button" data-value="1">1</button>
+        <button type="button" data-value="2">2</button>
+        <button type="button" data-value="3">3</button>
+        <button type="button" data-value="5">5</button>
+        <button type="button" data-value="7">7</button>
+      </div>
+
+      <h3>Eingabe</h3>
+      <div class="option-group" data-setting="inputMode">
+        <button type="button" data-value="darts">Einzelne Darts</button>
+        <button type="button" data-value="total">Aufnahme (Summe)</button>
+      </div>
+    </div>
+
+    <button id="resume-game" class="btn secondary big" type="button" hidden>Laufendes Spiel fortsetzen</button>
+    <button id="start-game" class="btn primary big" type="button">Spiel starten</button>
+  </section>
+
+  <!-- ===== Spiel ===== -->
+  <section id="game" class="screen" hidden>
+    <header class="game-header">
+      <button class="icon-btn" data-action="menu" type="button" aria-label="Menü">☰</button>
+      <div id="game-info" class="game-info"></div>
+      <button id="toggle-input" class="icon-btn wide" data-action="toggle-input" type="button" aria-label="Eingabemodus wechseln"></button>
+      <button id="undo-btn" class="icon-btn" data-action="undo" type="button" aria-label="Rückgängig">↶</button>
+    </header>
+
+    <div id="scoreboard"></div>
+
+    <div id="input-area">
+      <!-- Einzel-Dart-Eingabe -->
+      <div id="dart-pad" class="pad">
+        <div id="turn-display" class="turn-display"></div>
+        <div class="mods">
+          <button type="button" class="mod single" data-action="mult" data-mult="1">Single</button>
+          <button type="button" class="mod double" data-action="mult" data-mult="2">Double</button>
+          <button type="button" class="mod triple" data-action="mult" data-mult="3">Triple</button>
+        </div>
+        <div id="num-grid" class="num-grid"></div>
+      </div>
+
+      <!-- Summen-Eingabe -->
+      <div id="total-pad" class="pad" hidden>
+        <div class="total-display">
+          <span id="total-buffer" class="total-buffer">0</span>
+          <span id="total-preview" class="total-preview"></span>
+        </div>
+        <div class="quick-grid">
+          <button type="button" class="key quick" data-action="quick" data-value="26">26</button>
+          <button type="button" class="key quick" data-action="quick" data-value="41">41</button>
+          <button type="button" class="key quick" data-action="quick" data-value="45">45</button>
+          <button type="button" class="key quick" data-action="quick" data-value="60">60</button>
+          <button type="button" class="key quick" data-action="quick" data-value="81">81</button>
+          <button type="button" class="key quick" data-action="quick" data-value="85">85</button>
+          <button type="button" class="key quick" data-action="quick" data-value="100">100</button>
+          <button type="button" class="key quick" data-action="quick" data-value="140">140</button>
+        </div>
+        <div class="numpad">
+          <button type="button" class="key" data-action="digit" data-value="1">1</button>
+          <button type="button" class="key" data-action="digit" data-value="2">2</button>
+          <button type="button" class="key" data-action="digit" data-value="3">3</button>
+          <button type="button" class="key" data-action="digit" data-value="4">4</button>
+          <button type="button" class="key" data-action="digit" data-value="5">5</button>
+          <button type="button" class="key" data-action="digit" data-value="6">6</button>
+          <button type="button" class="key" data-action="digit" data-value="7">7</button>
+          <button type="button" class="key" data-action="digit" data-value="8">8</button>
+          <button type="button" class="key" data-action="digit" data-value="9">9</button>
+          <button type="button" class="key back" data-action="back" aria-label="Löschen">⌫</button>
+          <button type="button" class="key" data-action="digit" data-value="0">0</button>
+          <button type="button" class="key ok" data-action="ok">OK</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="overlay" class="overlay" hidden>
+    <div id="modal" class="modal" role="dialog" aria-modal="true"></div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
