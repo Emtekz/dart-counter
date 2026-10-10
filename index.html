@@ -18,10 +18,15 @@
   <section id="setup" class="screen">
     <h1><img src="icon.svg" alt="" class="logo"> Dart Counter</h1>
 
+    <button class="btn secondary" data-action="open-stats" type="button">📊 Spieler &amp; Statistiken</button>
+
     <div class="card">
       <h2>Spieler</h2>
       <div id="player-list" class="player-list"></div>
-      <button id="add-player" class="btn secondary" type="button">+ Spieler hinzufügen</button>
+      <div class="actions">
+        <button id="add-player" class="btn secondary" data-action="open-picker" type="button">+ Spieler</button>
+        <button id="add-bot" class="btn secondary" data-action="add-bot" type="button">🤖 + Dartbot</button>
+      </div>
     </div>
 
     <div class="card">
@@ -60,6 +65,34 @@
     <button id="start-game" class="btn primary big" type="button">Spiel starten</button>
   </section>
 
+  <!-- ===== Statistiken ===== -->
+  <section id="stats" class="screen page" hidden>
+    <header class="page-header">
+      <button class="icon-btn" data-action="go-setup" type="button" aria-label="Zurück">←</button>
+      <h1>Spieler &amp; Statistiken</h1>
+    </header>
+
+    <div id="profile-list" class="profile-list"></div>
+
+    <form class="card new-profile" data-form="new-profile">
+      <h2>Neuen Spieler anlegen</h2>
+      <div class="inline-form">
+        <input name="name" type="text" placeholder="Name" maxlength="20" required autocomplete="off">
+        <button class="btn primary" type="submit">Anlegen</button>
+      </div>
+    </form>
+
+    <div class="card">
+      <h2>Datensicherung</h2>
+      <p class="muted">Die Statistiken werden nur in diesem Browser gespeichert. Mit Export/Import kannst du sie sichern oder auf ein anderes Gerät übertragen.</p>
+      <div class="actions">
+        <button class="btn secondary" data-action="export" type="button">⬇ Exportieren</button>
+        <button class="btn secondary" data-action="import" type="button">⬆ Importieren</button>
+      </div>
+      <input id="import-file" type="file" accept="application/json,.json" hidden>
+    </div>
+  </section>
+
   <!-- ===== Spiel ===== -->
   <section id="game" class="screen" hidden>
     <header class="game-header">
@@ -72,6 +105,7 @@
     <div id="scoreboard"></div>
 
     <div id="input-area">
+      <div id="bot-banner" class="bot-banner" hidden></div>
       <!-- Einzel-Dart-Eingabe -->
       <div id="dart-pad" class="pad">
         <div id="turn-display" class="turn-display"></div>
