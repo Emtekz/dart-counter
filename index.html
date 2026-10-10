@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0d1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Dart Counter – X01 Punktezähler für Desktop, Tablet und Smartphone">
+  <meta name="description" content="Dart Counter – X01 und Around the Clock für Desktop, Tablet und Smartphone">
   <title>Dart Counter</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
@@ -14,11 +14,54 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- ===== Setup ===== -->
-  <section id="setup" class="screen">
-    <h1><img src="icon.svg" alt="" class="logo"> Dart Counter</h1>
+  <!-- ===== Dashboard ===== -->
+  <section id="home" class="screen page">
+    <header class="home-header">
+      <img src="icon.svg" alt="" class="logo">
+      <h1>Dart Counter</h1>
+    </header>
 
-    <button class="btn secondary" data-action="open-stats" type="button">📊 Spieler &amp; Statistiken</button>
+    <button id="resume-card" class="resume-card" data-action="resume" type="button" hidden></button>
+
+    <nav class="tiles">
+      <button class="tile play" data-action="nav" data-screen="setup" type="button">
+        <span class="tile-icon">🎯</span>
+        <span class="tile-title">Spielen</span>
+        <span class="tile-sub">X01 · Around the Clock</span>
+      </button>
+      <button class="tile" data-action="nav" data-screen="players" type="button">
+        <span class="tile-icon">👥</span>
+        <span class="tile-title">Spieler</span>
+        <span class="tile-sub" id="tile-players-sub"></span>
+      </button>
+      <button class="tile" data-action="nav" data-screen="stats" type="button">
+        <span class="tile-icon">📊</span>
+        <span class="tile-title">Statistiken</span>
+        <span class="tile-sub" id="tile-stats-sub"></span>
+      </button>
+    </nav>
+
+    <div class="card">
+      <h2>Letzte Spiele</h2>
+      <div id="recent-games"></div>
+    </div>
+  </section>
+
+  <!-- ===== Neues Spiel ===== -->
+  <section id="setup" class="screen page" hidden>
+    <header class="page-header">
+      <button class="icon-btn" data-action="back" type="button" aria-label="Zurück">←</button>
+      <h1>Neues Spiel</h1>
+    </header>
+
+    <div class="card">
+      <h2>Spielmodus</h2>
+      <div class="option-group" data-setting="mode">
+        <button type="button" data-value="x01">X01</button>
+        <button type="button" data-value="atc">Around the Clock</button>
+      </div>
+      <p id="mode-desc" class="muted"></p>
+    </div>
 
     <div class="card">
       <h2>Spieler</h2>
@@ -29,8 +72,8 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>Spielmodus</h2>
+    <div class="card" id="x01-settings">
+      <h2>Einstellungen</h2>
       <h3>Startpunkte</h3>
       <div class="option-group" data-setting="start">
         <button type="button" data-value="301">301</button>
@@ -45,6 +88,38 @@
         <button type="button" data-value="master">Master</button>
       </div>
 
+      <h3>Eingabe</h3>
+      <div class="option-group" data-setting="inputMode">
+        <button type="button" data-value="darts">Einzelne Darts</button>
+        <button type="button" data-value="total">Aufnahme (Summe)</button>
+      </div>
+    </div>
+
+    <div class="card" id="atc-settings">
+      <h2>Einstellungen</h2>
+      <h3>Was zählt als Treffer?</h3>
+      <div class="option-group" data-setting="atcVariant">
+        <button type="button" data-value="single">Alle Felder</button>
+        <button type="button" data-value="double">Nur Doppel</button>
+        <button type="button" data-value="triple">Nur Triple</button>
+      </div>
+
+      <div id="atc-skip-wrap">
+        <h3>Doppel / Triple springen 2 / 3 Felder weiter</h3>
+        <div class="option-group" data-setting="atcSkip">
+          <button type="button" data-value="off">Nein</button>
+          <button type="button" data-value="on">Ja</button>
+        </div>
+      </div>
+
+      <h3>Bull zum Abschluss</h3>
+      <div class="option-group" data-setting="atcBull">
+        <button type="button" data-value="off">Nein</button>
+        <button type="button" data-value="on">Ja</button>
+      </div>
+    </div>
+
+    <div class="card">
       <h3>Legs zum Sieg (First to)</h3>
       <div class="option-group" data-setting="legs">
         <button type="button" data-value="1">1</button>
@@ -53,26 +128,17 @@
         <button type="button" data-value="5">5</button>
         <button type="button" data-value="7">7</button>
       </div>
-
-      <h3>Eingabe</h3>
-      <div class="option-group" data-setting="inputMode">
-        <button type="button" data-value="darts">Einzelne Darts</button>
-        <button type="button" data-value="total">Aufnahme (Summe)</button>
-      </div>
     </div>
 
-    <button id="resume-game" class="btn secondary big" type="button" hidden>Laufendes Spiel fortsetzen</button>
     <button id="start-game" class="btn primary big" type="button">Spiel starten</button>
   </section>
 
-  <!-- ===== Statistiken ===== -->
-  <section id="stats" class="screen page" hidden>
+  <!-- ===== Spieler ===== -->
+  <section id="players" class="screen page" hidden>
     <header class="page-header">
-      <button class="icon-btn" data-action="go-setup" type="button" aria-label="Zurück">←</button>
-      <h1>Spieler &amp; Statistiken</h1>
+      <button class="icon-btn" data-action="back" type="button" aria-label="Zurück">←</button>
+      <h1>Spieler</h1>
     </header>
-
-    <div id="profile-list" class="profile-list"></div>
 
     <form class="card new-profile" data-form="new-profile">
       <h2>Neuen Spieler anlegen</h2>
@@ -82,15 +148,32 @@
       </div>
     </form>
 
+    <div id="player-manage" class="profile-list"></div>
+
     <div class="card">
       <h2>Datensicherung</h2>
-      <p class="muted">Die Statistiken werden nur in diesem Browser gespeichert. Mit Export/Import kannst du sie sichern oder auf ein anderes Gerät übertragen.</p>
+      <p class="muted">Spieler und Statistiken werden nur in diesem Browser gespeichert. Mit Export/Import kannst du sie sichern oder auf ein anderes Gerät übertragen.</p>
       <div class="actions">
         <button class="btn secondary" data-action="export" type="button">⬇ Exportieren</button>
         <button class="btn secondary" data-action="import" type="button">⬆ Importieren</button>
       </div>
       <input id="import-file" type="file" accept="application/json,.json" hidden>
     </div>
+  </section>
+
+  <!-- ===== Statistiken ===== -->
+  <section id="stats" class="screen page wide" hidden>
+    <header class="page-header">
+      <button class="icon-btn" data-action="back" type="button" aria-label="Zurück">←</button>
+      <h1>Statistiken</h1>
+    </header>
+
+    <div class="tabs" id="stats-tabs">
+      <button type="button" data-action="stats-tab" data-tab="x01">X01</button>
+      <button type="button" data-action="stats-tab" data-tab="atc">Around the Clock</button>
+    </div>
+
+    <div id="stats-content"></div>
   </section>
 
   <!-- ===== Spiel ===== -->
@@ -106,7 +189,8 @@
 
     <div id="input-area">
       <div id="bot-banner" class="bot-banner" hidden></div>
-      <!-- Einzel-Dart-Eingabe -->
+
+      <!-- X01: Einzel-Dart-Eingabe -->
       <div id="dart-pad" class="pad">
         <div id="turn-display" class="turn-display"></div>
         <div class="mods">
@@ -117,7 +201,7 @@
         <div id="num-grid" class="num-grid"></div>
       </div>
 
-      <!-- Summen-Eingabe -->
+      <!-- X01: Summen-Eingabe -->
       <div id="total-pad" class="pad" hidden>
         <div class="total-display">
           <span id="total-buffer" class="total-buffer">0</span>
@@ -143,9 +227,20 @@
           <button type="button" class="key" data-action="digit" data-value="7">7</button>
           <button type="button" class="key" data-action="digit" data-value="8">8</button>
           <button type="button" class="key" data-action="digit" data-value="9">9</button>
-          <button type="button" class="key back" data-action="back" aria-label="Löschen">⌫</button>
+          <button type="button" class="key back" data-action="back-digit" aria-label="Löschen">⌫</button>
           <button type="button" class="key" data-action="digit" data-value="0">0</button>
           <button type="button" class="key ok" data-action="ok">OK</button>
+        </div>
+      </div>
+
+      <!-- Around the Clock -->
+      <div id="atc-pad" class="pad" hidden>
+        <div id="atc-turn" class="turn-display"></div>
+        <div id="atc-target" class="atc-target"></div>
+        <div id="atc-hits" class="atc-hits"></div>
+        <div class="atc-bottom">
+          <button type="button" class="key miss" data-action="atc" data-mult="0">Daneben</button>
+          <button type="button" class="key undo" data-action="undo" aria-label="Rückgängig">↶</button>
         </div>
       </div>
     </div>

@@ -1,48 +1,62 @@
 # 🎯 Dart Counter
 
-Ein Punktezähler für Darts (X01) – reines HTML, CSS und JavaScript, ohne Abhängigkeiten.
+Ein Dart-Zähler mit Statistik – reines HTML, CSS und JavaScript, ohne Abhängigkeiten.
 Läuft auf Desktop, Tablet und Smartphone.
 
-## Funktionen
+**Live:** https://emtekz.github.io/dart-counter/
 
-- **X01**: 301, 501 oder 701
-- **Check-out**: Single, Double oder Master Out (inkl. Bust-Erkennung)
-- **1–8 Spieler**, Reihenfolge anpassbar – als gespeichertes Profil oder als Gast
-- **Dartbot** in 10 Stufen (Ø 25 bis Ø 105): simuliert echte Würfe mit Streuung auf der Dartscheibe,
-  spielt Checkout-Wege und stellt sich Doppel zurecht
-- **Spielerprofile mit Langzeit-Statistik**: Spiele, Siege, Legs, 3-Dart-Ø, First-9-Ø, Doppelquote,
-  180/140+/100+, höchstes Finish, bestes Leg, Ø-Verlauf und Liste der letzten Spiele
-- **Export/Import** der Statistiken als JSON (Sicherung oder Übertragung auf ein anderes Gerät)
-- **Legs**: First to 1, 2, 3, 5 oder 7 – Anwurf wechselt jedes Leg
-- **Zwei Eingabearten** (jederzeit umschaltbar):
-  - *Einzelne Darts*: Single/Double/Triple + Zahl, Bull, Miss
-  - *Aufnahme (Summe)*: Gesamtpunktzahl eintippen, Schnelltasten für häufige Werte
-- **Checkout-Vorschläge** ab 170 Rest
-- **Rückgängig** für jeden Wurf
-- **Spielstatistik**: 3-Dart-Durchschnitt, First 9, 180er, 140+, 100+, Doppelquote, höchstes Finish, bestes Leg
-- Spielstand wird automatisch im Browser gespeichert (Neuladen ohne Verlust)
-- Bildschirm bleibt während des Spiels an (sofern vom Browser unterstützt)
-- Als App auf dem Homescreen installierbar
+## Dashboard
 
-## Hinweise zur Statistik
+Die Startseite bietet direkten Zugriff auf:
 
-- In die Profil-Statistik fließen nur **beendete** Spiele ein.
-- Die **Doppelquote** wird nur bei der Eingabe einzelner Darts erfasst – bei der Summen-Eingabe ist nicht
-  bekannt, wie viele Darts auf ein Doppel gingen.
-- Die Daten liegen im `localStorage` des Browsers. Wer Browserdaten löscht, verliert sie – daher
-  gelegentlich exportieren.
+- **Spielen** – neues Spiel einrichten (X01 oder Around the Clock)
+- **Spieler** – Spieler anlegen, umbenennen, löschen, Daten sichern
+- **Statistiken** – Bestenlisten und Verläufe je Spielmodus
+- **Spiel fortsetzen** – ein unterbrochenes Spiel wieder aufnehmen
+- **Letzte Spiele** – Ergebnisse der zuletzt beendeten Spiele
+
+## Spielmodi
+
+### X01
+- 301, 501 oder 701 mit Single, Double oder Master Out (inkl. Bust-Erkennung)
+- Eingabe einzelner Darts (Single/Double/Triple + Zahl) oder der Summe einer Aufnahme
+- Checkout-Vorschläge ab 170 Rest
+
+### Around the Clock
+- Die Felder 1–20 der Reihe nach treffen, optional das Bull zum Abschluss
+- Varianten: **Alle Felder**, **Nur Doppel** oder **Nur Triple**
+- Optional: Doppel springt 2, Triple 3 Felder weiter (das Bull kann nicht übersprungen werden)
+
+### Für beide Modi
+- 1–8 Spieler (gespeichertes Profil, Gast oder Dartbot), Legs „First to 1–7“, Anwurf wechselt
+- **Dartbot** in 10 Stufen (Ø 25 bis Ø 105): simuliert echte Würfe mit Streuung auf der Dartscheibe
+- **Rückgängig** für jeden Wurf, Spielstand bleibt beim Neuladen erhalten
+- Bildschirm bleibt während des Spiels an, als App auf dem Homescreen installierbar
+
+## Statistiken
+
+Gespeicherte Spieler sammeln bei jedem **beendeten** Spiel Statistiken:
+
+| X01 | Around the Clock |
+|---|---|
+| Spiele, Siege, Legs | Spiele, Siege, Legs |
+| 3-Dart-Ø, First-9-Ø, Ø-Verlauf | Trefferquote, Verlauf |
+| Doppelquote¹ | Bestes Leg (Darts) |
+| 180 / 140+ / 100+ | |
+| Höchstes Finish, bestes Leg | |
+
+¹ Nur bei Eingabe einzelner Darts – bei der Summen-Eingabe ist nicht bekannt, wie viele Darts aufs Doppel gingen.
+
+Die Daten liegen im `localStorage` des Browsers. Über **Spieler → Datensicherung** lassen sie sich
+als JSON exportieren und auf einem anderen Gerät importieren.
 
 ## Tastatur (Desktop)
 
-| Taste | Funktion |
-|---|---|
-| `S` / `D` / `T` | Single / Double / Triple |
-| `M` oder `0` | Miss (Dart-Eingabe) |
-| Ziffern + `Enter` | Summe eingeben (Summen-Eingabe) |
-| `Strg+Z` | Rückgängig |
-| `Esc` | Menü |
-
-## Nutzung
-
-`index.html` im Browser öffnen – oder über GitHub Pages veröffentlichen:
-Repository → **Settings → Pages** → Branch `main`, Ordner `/ (root)` → **Save**.
+| Taste | X01 | Around the Clock |
+|---|---|---|
+| `S` / `D` / `T` | Single / Double / Triple | – |
+| `1` / `2` / `3` | – | Treffer Single / Double / Triple |
+| `Enter` / Leertaste | Summe bestätigen | Treffer |
+| `M` / `0` | Miss | Daneben |
+| `Strg+Z` | Rückgängig | Rückgängig |
+| `Esc` | Menü | Menü |
