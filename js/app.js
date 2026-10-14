@@ -207,7 +207,9 @@ function nav(r) {
   const item = (hash, name, ic, label) =>
     `<a href="${hash}" class="nav-item ${r === name || (name === 'players' && r === 'player') ? 'active' : ''}">${icon(ic)}<span>${label}</span></a>`;
   return `<nav class="nav">
-    ${item('#/', 'home', 'target', 'Spielen')}
+    ${db.current
+      ? `<a href="#/game" class="nav-item nav-live ${r === 'home' ? 'active' : ''}" title="Pausiertes Spiel fortsetzen">${icon('target')}<span>Spielen</span><i class="nav-dot" aria-label="Spiel läuft"></i></a>`
+      : item('#/', 'home', 'target', 'Spielen')}
     ${item('#/players', 'players', 'users', 'Spieler')}
     ${item('#/stats', 'stats', 'chart', 'Statistik')}
     ${item('#/settings', 'settings', 'settings', 'Optionen')}
@@ -236,7 +238,6 @@ const X01_MODES = [
 ];
 
 function viewHome() {
-  const cur = db.current?.state;
   const recent = db.games.slice(-3).reverse();
   const start = homeStart();
   const trainings = Object.entries(GAMES).filter(([, g]) => g.cat === 'training');
@@ -250,8 +251,6 @@ function viewHome() {
   <div class="hero-divider" aria-hidden="true"></div>
 
   ${favoritesBlock()}
-
-  ${cur ? resumeCard(cur) : ''}
 
   <section class="block">
     <div class="block-head"><h2>X01 <em>Match</em></h2>
@@ -283,40 +282,6 @@ function viewHome() {
   ${recent.length ? `<section class="block">
     <div class="block-head"><h2>Zuletzt</h2><a class="text-link" href="#/stats">Alle Spiele</a></div>
     <div class="list">${recent.map(gameRow).join('')}</div></section>` : ''}`;
-}
-
-/** Karte für ein pausiertes Spiel: Modus, Fortschritt, Spielstand und Weiter/Verwerfen. */
-function resumeCard(st) {
-  let progress, standings;
-  if (st.type === 'x01') {
-    const sets = st.config.format === 'sets';
-    progress = `${sets ? `Set ${st.sides.reduce((a, s) => a + s.sets, 0) + 1} · ` : ''}Leg ${st.legNo}`;
-    standings = st.sides.map((S, i) => ({
-      color: st.players[S.members[0]].color,
-      name: S.members.map(m => st.players[m].name).join(' & '),
-      value: st.leg.rem[i],
-      active: i === st.leg.turn,
-    }));
-  } else {
-    progress = st.players.length > 1 ? `Runde ${st.round}` : 'Training';
-    standings = st.players.map((p, i) => {
-      const q = st.ps[i];
-      const value = { atc: q.done ? '✔' : targetLabel(st, st.targets[q.idx]), bobs27: q.score, power: q.total, doubles: pct(q.hits, q.darts), c121: q.target }[st.type];
-      return { color: p.color, name: p.name, value, active: i === st.turn };
-    });
-  }
-  const title = st.type === 'x01' ? `${st.config.start} · ${{ double: 'Double Out', single: 'Single Out', master: 'Master Out' }[st.config.out]}` : GAMES[st.type].name;
-  return `<section class="resume-card">
-    <a class="rc-main" href="#/game">
-      <span class="rc-kicker">Laufendes Spiel <i></i> ${esc(progress)}</span>
-      <span class="rc-title">${esc(title)}</span>
-      <span class="rc-players">${standings.map(s => `<span class="rc-p ${s.active ? 'on' : ''}" style="--c:${s.color}">${esc(s.name)} <b>${esc(s.value)}</b></span>`).join('')}</span>
-    </a>
-    <div class="rc-actions">
-      <button class="icon-btn rc-discard" data-action="discard-current" aria-label="Spiel verwerfen" title="Spiel verwerfen">${icon('trash')}</button>
-      <a class="btn primary rc-go" href="#/game">${icon('play')} Weiter</a>
-    </div>
-  </section>`;
 }
 
 /* ---------- Favoriten ---------- */
@@ -533,6 +498,20 @@ function startFromSetup() {
     st = newTraining(s.type, { ...s.opts }, players);
   }
   launch(st);
+}
+
+/** Gibt es ein pausiertes Spiel, vor dem Start eines neuen nachfragen. */
+function guardRunning(fn) {
+  if (!db.current) return fn();
+  openModal({
+    title: 'Pausiertes Spiel verwerfen?',
+    text: 'Es gibt noch ein pausiertes Spiel. Startest du ein neues, wird es ohne Wertung verworfen.',
+    buttons: [
+      { label: 'Abbrechen', cls: 'ghost' },
+      { label: 'Zum pausierten Spiel', fn: () => go('#/game') },
+      { label: 'Neues Spiel', cls: 'primary', fn: () => { db.current = null; save(); fn(); } },
+    ],
+  });
 }
 
 function launch(st) {
@@ -1337,7 +1316,7 @@ const actions = {
     ui.setup = { type: f.type, opts: { ...GAMES[f.type].defaults, ...f.opts }, parts, teams: f.teams };
     normalizeOpts(ui.setup);
     if (setupError()) { toast(setupError(), 'bad'); return go('#/play/' + f.type); }
-    startFromSetup();
+    guardRunning(startFromSetup);
   },
   'fav-del': d => {
     db.settings.favorites = favs().filter(f => f.id !== d.id);
@@ -1417,7 +1396,7 @@ const actions = {
       },
     })),
   }),
-  start: () => startFromSetup(),
+  start: () => guardRunning(startFromSetup),
   'bull-res': d => { ui.bull.res[+d.i] = d.r; render(); },
   'bull-pick': d => { ui.bull.winner = +d.i; render(); },
   'bull-again': () => {
@@ -1459,7 +1438,7 @@ const actions = {
   },
   hit: d => act(st => trainingInput(st, +d.v)),
 
-  rematch: d => rematch(d.id),
+  rematch: d => guardRunning(() => rematch(d.id)),
   'delete-game': d => confirmBox('Spiel löschen?', 'Das Spiel wird aus der Historie und allen Statistiken entfernt.', 'Löschen', () => {
     db.games = db.games.filter(g => g.id !== d.id);
     save();
