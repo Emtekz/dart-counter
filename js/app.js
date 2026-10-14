@@ -257,10 +257,7 @@ function viewHome() {
     <h1 class="hero-title">Game<span>On.</span></h1>
   </header>
 
-  ${cur ? `<a class="go-bar" href="#/game">
-      <span><small>Weiterspielen</small>${esc(gameTitle(cur))}</span>${icon('play', 'go-ico')}</a>
-    <div class="go-sub"><span class="muted">${esc(cur.players.map(p => p.name).join(' · '))}</span>
-      <button class="link-btn" data-action="discard-current">Verwerfen</button></div>` : ''}
+  ${cur ? resumeCard(cur) : ''}
 
   ${favoritesBlock()}
 
@@ -293,6 +290,40 @@ function viewHome() {
   ${recent.length ? `<section class="block">
     <div class="block-head"><h2>Zuletzt</h2><a class="text-link" href="#/stats">Alle Spiele</a></div>
     <div class="list">${recent.map(gameRow).join('')}</div></section>` : ''}`;
+}
+
+/** Karte für ein pausiertes Spiel: Modus, Fortschritt, Spielstand und Weiter/Verwerfen. */
+function resumeCard(st) {
+  let progress, standings;
+  if (st.type === 'x01') {
+    const sets = st.config.format === 'sets';
+    progress = `${sets ? `Set ${st.sides.reduce((a, s) => a + s.sets, 0) + 1} · ` : ''}Leg ${st.legNo}`;
+    standings = st.sides.map((S, i) => ({
+      color: st.players[S.members[0]].color,
+      name: S.members.map(m => st.players[m].name).join(' & '),
+      value: st.leg.rem[i],
+      active: i === st.leg.turn,
+    }));
+  } else {
+    progress = st.players.length > 1 ? `Runde ${st.round}` : 'Training';
+    standings = st.players.map((p, i) => {
+      const q = st.ps[i];
+      const value = { atc: q.done ? '✔' : targetLabel(st, st.targets[q.idx]), bobs27: q.score, power: q.total, doubles: pct(q.hits, q.darts), c121: q.target }[st.type];
+      return { color: p.color, name: p.name, value, active: i === st.turn };
+    });
+  }
+  const title = st.type === 'x01' ? `${st.config.start} · ${{ double: 'Double Out', single: 'Single Out', master: 'Master Out' }[st.config.out]}` : GAMES[st.type].name;
+  return `<section class="resume-card">
+    <a class="rc-main" href="#/game">
+      <span class="rc-kicker">Laufendes Spiel <i></i> ${esc(progress)}</span>
+      <span class="rc-title">${esc(title)}</span>
+      <span class="rc-players">${standings.map(s => `<span class="rc-p ${s.active ? 'on' : ''}" style="--c:${s.color}">${esc(s.name)} <b>${esc(s.value)}</b></span>`).join('')}</span>
+    </a>
+    <div class="rc-actions">
+      <button class="icon-btn rc-discard" data-action="discard-current" aria-label="Spiel verwerfen" title="Spiel verwerfen">${icon('trash')}</button>
+      <a class="btn primary rc-go" href="#/game">${icon('play')} Weiter</a>
+    </div>
+  </section>`;
 }
 
 /* ---------- Favoriten ---------- */
