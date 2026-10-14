@@ -36,6 +36,7 @@ const ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   play: '<path d="M7 4v16l13-8z"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  star: '<path d="m12 3 2.8 5.8 6.2.9-4.5 4.4 1 6.2L12 17.4l-5.5 2.9 1-6.2L3 9.7l6.2-.9z"/>',
   trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
   keypad: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>',
@@ -261,6 +262,8 @@ function viewHome() {
     <div class="go-sub"><span class="muted">${esc(cur.players.map(p => p.name).join(' · '))}</span>
       <button class="link-btn" data-action="discard-current">Verwerfen</button></div>` : ''}
 
+  ${favoritesBlock()}
+
   <section class="block">
     <div class="block-head"><h2>X01 <em>Match</em></h2>${infoBtn('x01')}</div>
     <div class="score-pick" role="group" aria-label="Startpunkte">${[301, 501, 701].map(v =>
@@ -290,6 +293,58 @@ function viewHome() {
   ${recent.length ? `<section class="block">
     <div class="block-head"><h2>Zuletzt</h2><a class="text-link" href="#/stats">Alle Spiele</a></div>
     <div class="list">${recent.map(gameRow).join('')}</div></section>` : ''}`;
+}
+
+/* ---------- Favoriten ---------- */
+
+const MAX_FAVS = 3;
+const favs = () => (db.settings.favorites = db.settings.favorites || []);
+const favKey = s => JSON.stringify({
+  type: s.type, opts: s.opts, teams: !!s.teams,
+  parts: s.parts.map(p => ({ kind: p.kind, playerId: p.playerId || null, name: p.kind === 'human' ? null : p.name, level: p.level || null, team: s.teams ? p.team : 0 })),
+});
+const findFavorite = s => favs().find(f => favKey(f) === favKey(s));
+
+function favTitle(f) {
+  if (f.type === 'x01') {
+    const out = { double: 'Double Out', single: 'Single Out', master: 'Master Out' }[f.opts.out];
+    return { art: f.opts.start, title: `${f.opts.start} · ${out}`, sub: `First to ${f.opts.format === 'sets' ? f.opts.sets + ' Sets' : f.opts.legs + (f.opts.legs > 1 ? ' Legs' : ' Leg')}${f.opts.throwOff === 'bull' ? ' · Ausbullen' : ''}` };
+  }
+  return { art: GAME_ART[f.type], title: GAMES[f.type].name, sub: variantOf(f.type, f.opts).label.split(' · ').slice(1).join(' · ') };
+}
+const favPlayers = f => {
+  const names = f.parts.map(p => (p.kind === 'human' ? getPlayer(p.playerId)?.name : p.name)).filter(Boolean);
+  return f.teams ? [0, 1].map(t => f.parts.filter(p => p.team === t).map(p => (p.kind === 'human' ? getPlayer(p.playerId)?.name : p.name)).filter(Boolean).join(' & ')).join(' vs. ') : names.join(' · ');
+};
+
+function favoritesBlock() {
+  const list = favs();
+  return `<section class="block">
+    <div class="block-head"><h2>Favoriten</h2><span class="muted small">${list.length}/${MAX_FAVS}</span></div>
+    ${list.length ? `<div class="fav-grid">${list.map(f => {
+      const t = favTitle(f);
+      return `<div class="fav-tile">
+        <button class="fav-main" data-action="fav-start" data-id="${f.id}">
+          <span class="fav-art">${esc(t.art)}</span>
+          <span class="fav-text"><b>${esc(t.title)}</b><span>${esc(t.sub)}</span><span class="fav-players">${esc(favPlayers(f)) || 'Spieler wählen'}</span></span>
+          <span class="fav-go">${icon('play')}</span>
+        </button>
+        <button class="icon-btn sm fav-del" data-action="fav-del" data-id="${f.id}" aria-label="Favorit entfernen" title="Favorit entfernen">${icon('x')}</button>
+      </div>`;
+    }).join('')}</div>`
+      : `<div class="fav-empty">${icon('star')}<span>Richte ein Spiel ein und tippe oben auf <b>„Merken“</b> – dann startest du es hier mit einem Tipp. Bis zu ${MAX_FAVS} Favoriten.</span></div>`}
+  </section>`;
+}
+
+function saveFavorite(replaceId) {
+  const s = ui.setup;
+  const fav = { id: uid(), type: s.type, opts: { ...s.opts }, parts: s.parts.map(p => ({ ...p })), teams: !!s.teams };
+  const list = favs();
+  if (replaceId) list.splice(list.findIndex(f => f.id === replaceId), 1, fav);
+  else list.push(fav);
+  save();
+  toast(`${icon('star')} Als Favorit gespeichert`);
+  render();
 }
 
 const infoBtn = type => `<button class="icon-btn info-btn" data-action="rules" data-type="${type}" aria-label="So funktioniert ${esc(GAMES[type].name)}" title="Regeln & Erklärung">${icon('info')}</button>`;
@@ -388,8 +443,9 @@ function viewSetup(type) {
     ${s.parts.map((p, i) => (p.team === t ? `<button class="team-member" data-action="part-team" data-i="${i}">${dot(partColor(p, i))}${esc(partName(p))}<span class="muted">⇄</span></button>` : '')).join('') || '<span class="muted small">leer</span>'}</div>`;
 
   const err = setupError();
-  const startLabel = type === 'x01' ? `${s.opts.start} starten` : `${def.name} starten`;
-  return `${pageHead(def.name, '#/', `<button class="btn ghost sm" data-action="rules" data-type="${type}">${icon('info')} Regeln</button>`)}
+  const startLabel = type === 'x01' ? `${s.opts.start} starten` : 'Training starten';
+  const isFav = !!findFavorite(s);
+  return `${pageHead(def.name, '#/', `<button class="btn ghost sm fav-toggle ${isFav ? 'on' : ''}" data-action="fav-toggle" aria-pressed="${isFav}" title="${isFav ? 'Aus Favoriten entfernen' : 'Als Favorit speichern'}">${icon('star')}<span class="hide-sm"> ${isFav ? 'Favorit' : 'Merken'}</span></button><button class="btn ghost sm" data-action="rules" data-type="${type}">${icon('info')}<span class="hide-sm"> Regeln</span></button>`)}
 
   <section class="card">
     <div class="row between"><h3>Wer spielt?</h3>${s.parts.length > 1 ? `<button class="btn ghost sm" data-action="shuffle">${icon('shuffle')} Mischen</button>` : ''}</div>
@@ -516,7 +572,7 @@ function scheduleBullBot() {
     const hit = throwAt(throwOf(25, 2), contestantThrower(b, i).level, true);
     b.res[i] = hit.n === 25 ? (hit.m === 2 ? 'bull' : 'outer') : 'miss';
     render();
-  }, 900);
+  }, BOT_DELAY.bull);
 }
 
 function startAfterBull() {
@@ -842,6 +898,9 @@ function finishGame() {
 
 /* ---------- Dartbot ---------- */
 
+// Tempo des Dartbots (ms): Bedenkzeit vor dem ersten Dart, dann Abstand zwischen den Darts
+const BOT_DELAY = { first: 1800, dart: 1400, bull: 1500 };
+
 function scheduleBot() {
   const st = db.current?.state;
   if (!st || ui.botTimer || ui.modal || !isBotTurn(st)) return;
@@ -855,7 +914,7 @@ function scheduleBot() {
     const target = chooseTarget(rem, 3 - L.cur.length, s.config.out, opened);
     const hit = throwAt(target, pl.level, rem <= 60);
     act(x => throwDart(x, hit));
-  }, db.current.state.leg.cur.length ? 650 : 900);
+  }, db.current.state.leg.cur.length ? BOT_DELAY.dart : BOT_DELAY.first);
 }
 
 function stopBot() {
@@ -1232,6 +1291,35 @@ const actions = {
     initSetup(d.type);
     if (d.preset) applyPreset(d.preset);
     go('#/play/' + d.type);
+  },
+  'fav-toggle': () => {
+    const s = ui.setup, existing = findFavorite(s);
+    if (existing) {
+      db.settings.favorites = favs().filter(f => f !== existing);
+      save();
+      toast('Favorit entfernt');
+      return render();
+    }
+    if (setupError()) return toast(setupError(), 'bad');
+    if (favs().length < MAX_FAVS) return saveFavorite();
+    openModal({
+      title: 'Favoriten voll', text: `Es sind schon ${MAX_FAVS} Favoriten gespeichert. Welchen möchtest du ersetzen?`,
+      buttons: [{ label: 'Abbrechen', cls: 'ghost' }, ...favs().map(f => ({ label: favTitle(f).title, fn: () => saveFavorite(f.id) }))],
+    });
+  },
+  'fav-start': d => {
+    const f = favs().find(x => x.id === d.id);
+    if (!f) return;
+    const parts = f.parts.filter(p => p.kind !== 'human' || getPlayer(p.playerId)).map(p => ({ ...p }));
+    ui.setup = { type: f.type, opts: { ...GAMES[f.type].defaults, ...f.opts }, parts, teams: f.teams };
+    normalizeOpts(ui.setup);
+    if (setupError()) { toast(setupError(), 'bad'); return go('#/play/' + f.type); }
+    startFromSetup();
+  },
+  'fav-del': d => {
+    db.settings.favorites = favs().filter(f => f.id !== d.id);
+    save();
+    render();
   },
   'home-start': d => {
     const last = db.settings.lastSetup?.x01 || {};

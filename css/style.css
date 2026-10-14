@@ -720,3 +720,36 @@ body.in-game { overflow: hidden; }
 .c121-meta { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; font-family: var(--display); font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .c121-meta b { color: #fff; }
 .hearts { color: var(--red); letter-spacing: .12em; font-size: 1.2rem; }
+
+/* ---------- Favoriten ---------- */
+.fav-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 700px) { .fav-grid { grid-template-columns: minmax(0, 1fr); } }
+.fav-tile { position: relative; }
+.fav-main {
+  width: 100%; height: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
+  padding: 12px 46px 12px 12px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--red) 22%, var(--panel)), var(--panel) 70%);
+  border: 1px solid var(--line); border-left: 4px solid var(--gold);
+  transition: background .12s, transform .08s;
+}
+.fav-main:hover { border-color: var(--gold); }
+.fav-main:active { transform: scale(.98); }
+.fav-art { min-width: 58px; height: 46px; padding: 0 6px; display: grid; place-items: center; background: var(--gold); color: #1a1200; font-family: var(--display); font-weight: 900; font-style: italic; font-size: 1.5rem; transform: skewX(-10deg); flex: none; }
+.fav-text { display: flex; flex-direction: column; min-width: 0; }
+.fav-text b { font-family: var(--display); font-size: 1.35rem; font-weight: 900; font-style: italic; text-transform: uppercase; line-height: 1.05; }
+.fav-text span { font-size: .76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-text .fav-players { color: #ddd; font-weight: 600; }
+.fav-go { display: none; }
+.fav-del { position: absolute; top: 6px; right: 6px; background: transparent; border-color: transparent; color: var(--muted); }
+.fav-del:hover { color: #fff; }
+.fav-empty { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px dashed var(--line); color: var(--muted); font-size: .85rem; }
+.fav-empty .ico { color: var(--gold); width: 26px; height: 26px; }
+.fav-empty b { color: #fff; }
+.fav-toggle.on { color: var(--gold); border-color: var(--gold); }
+.fav-toggle.on .ico { fill: var(--gold); }
+
+@media (max-width: 520px) {
+  .hide-sm { display: none; }
+  .page-head h1 { font-size: 1.8rem; }
+  .page-head .btn.sm { padding: 0 10px; min-width: 40px; }
+}

@@ -25,6 +25,7 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
 - **Checkout 121** – ab 121 aufwärts checken, mit Darts pro Ziel (3–15), Checkpoints für schnelle Checks und 1–5 Leben
 
 ### Bedienung
+- Bis zu 3 Favoriten (Modus, Einstellungen und Spieler) direkt auf der Startseite – Start mit einem Tipp
 - Startseite als Spiel-Hub: X01 mit Schnellwahl (301/501/701 · Solo, Gegner, Dartbot, Doppel) und alle Trainingsspiele auf einen Blick
 - Zu jedem Spielmodus eine Erklärung der Regeln (ⓘ auf der Startseite, beim Einrichten und im Spiel)
 - Spieler einfach in Wurfreihenfolge antippen, Gäste und Bots per Dialog hinzufügen
