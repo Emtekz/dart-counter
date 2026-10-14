@@ -660,3 +660,26 @@ body.in-game { overflow: hidden; }
 .pchip .pico { color: var(--c); opacity: 1; width: 18px; height: 18px; }
 .sb-names .pico { color: var(--pc); width: 1em; height: 1em; vertical-align: -.1em; }
 .range { width: 100%; accent-color: var(--red); height: 28px; }
+
+/* ---------- Ausbullen ---------- */
+.bull-list { display: flex; flex-direction: column; gap: 8px; }
+.bull-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); box-shadow: inset 6px 0 0 var(--pc);
+}
+.bull-row.win { border-color: var(--gold); box-shadow: inset 6px 0 0 var(--pc), 0 0 0 1px var(--gold); }
+.bull-row.out { opacity: .45; }
+.bull-name { display: flex; flex-direction: column; padding-left: 6px; }
+.bull-name b { font-family: var(--display); font-size: 1.6rem; font-weight: 900; font-style: italic; text-transform: uppercase; line-height: 1; }
+.bull-name small { color: var(--muted); font-size: .75rem; }
+.bull-btns { display: flex; gap: 6px; }
+.bull-btn { min-height: 46px; padding: 0 16px; border: 1px solid var(--line); background: var(--panel-2); font-family: var(--display); font-size: 1.2rem; font-weight: 900; font-style: italic; text-transform: uppercase; transform: skewX(-8deg); }
+.bull-btn.bull { background: var(--red-2); border-color: var(--red); }
+.bull-btn.outer { background: #14532d; border-color: #16a34a; }
+.bull-btn.miss { color: var(--muted); }
+.bull-res { font-family: var(--display); font-size: 1.4rem; font-weight: 900; font-style: italic; text-transform: uppercase; padding: 4px 14px; transform: skewX(-8deg); }
+.bull-res.bull { background: var(--red); }
+.bull-res.outer { background: #16a34a; }
+.bull-res.miss { background: var(--panel-3); color: var(--muted); }
+.bull-row.win .bull-res { box-shadow: 0 0 0 2px var(--gold); }
+.bull-tie { border-left: 4px solid var(--gold); }

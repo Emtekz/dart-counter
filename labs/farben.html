@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testseite · Farben</title>
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  body { padding: 18px 14px 60px; background: #111; }
+  .wrap { max-width: 1900px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+  .intro { color: #aaa; max-width: 780px; margin: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; align-items: start; }
+  .theme { border: 1px solid #333; padding: 14px; display: flex; flex-direction: column; gap: 14px; background: radial-gradient(600px 260px at 90% -80px, var(--glow), transparent 70%) no-repeat, var(--bg); min-width: 0; }
+  .theme > header h2 { font-size: 1.8rem; font-weight: 900; font-style: italic; }
+  .theme > header h2 span { color: var(--red); margin-right: 6px; }
+  .theme > header p { margin: 2px 0 0; color: var(--muted); font-size: .82rem; }
+  .swatch-row { display: flex; gap: 4px; }
+  .swatch-row i { flex: 1; height: 16px; display: block; }
+  .theme .hero-title { font-size: 4rem; }
+  .theme .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .theme .sb-row { height: 66px; }
+  .theme .sb-score { font-size: 3rem; }
+  .mini-kp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .mini-kp button { height: 46px; border: 1px solid #2a1e22; background: var(--panel-2); font-family: var(--display); font-weight: 800; font-size: 1.6rem; }
+  .mini-kp .ok { background: linear-gradient(100deg, var(--red), var(--red-2)); border-color: var(--red); font-style: italic; font-weight: 900; }
+  .nav-demo { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 2px solid var(--red); background: rgba(0, 0, 0, .35); }
+  .nav-demo span { text-align: center; padding: 12px 0; font-family: var(--display); font-weight: 800; letter-spacing: .12em; font-size: .85rem; color: #7d6b71; }
+  .nav-demo span.on { color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--red) 30%, transparent), transparent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Testseite</div>
+    <h1 style="font-size:2.6rem;font-weight:900;font-style:italic">Farbvarianten</h1>
+    <p class="intro">Dieselben Bausteine der App in verschiedenen Farbstimmungen – vom aktuellen Rot bis zu Rot/Lila-Verläufen. Nur die Farben ändern sich, alles andere bleibt Broadcast.</p>
+  </header>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script type="module">
+const THEMES = [
+  { name: 'Aktuell · Rot', desc: 'Das jetzige Design zum Vergleich.',
+    v: { red: '#ff1f3d', red2: '#c4001f', deep: '#8d0718', soft: '#ff4d63', bg: '#0b0809', panel: '#151012', panel2: '#1d1517', panel3: '#281c1f', line: '#33242a', muted: '#a39197', glow: 'rgba(255,31,61,.20)' } },
+  { name: 'Rot → Lila', desc: 'Rot bleibt Hauptfarbe, Verläufe laufen in Lila aus. Hintergrund minimal violett.',
+    v: { red: '#ff2147', red2: '#8a2be2', deep: '#5b1a8f', soft: '#ff5a7a', bg: '#0b080d', panel: '#151018', panel2: '#1d1621', panel3: '#281d2e', line: '#352638', muted: '#a596ab', glow: 'rgba(160,40,230,.22)' } },
+  { name: 'Magenta', desc: 'Pinkes Rot mit lila Verlauf – knalliger, etwas „Nachtclub“.',
+    v: { red: '#ff1f7a', red2: '#7b2ff7', deep: '#6a1b9a', soft: '#ff5c9d', bg: '#0b070e', panel: '#160f1a', panel2: '#1e1523', panel3: '#2a1d31', line: '#38253f', muted: '#ab95b3', glow: 'rgba(255,31,122,.22)' } },
+  { name: 'Lila mit Rot', desc: 'Lila als Hauptfarbe, Rot nur noch als Verlaufsende und für Treffer.',
+    v: { red: '#9d4dff', red2: '#ff2147', deep: '#5b21b6', soft: '#b77bff', bg: '#0a080e', panel: '#141019', panel2: '#1c1623', panel3: '#271e31', line: '#33283f', muted: '#a49ab3', glow: 'rgba(157,77,255,.22)' } },
+  { name: 'Bordeaux / Purpur', desc: 'Dunkler und edler: Weinrot zu tiefem Purpur, weniger grell.',
+    v: { red: '#d81b4a', red2: '#5e1e8c', deep: '#4a1466', soft: '#e8557a', bg: '#0a0709', panel: '#140e13', panel2: '#1c141b', panel3: '#271c26', line: '#33242f', muted: '#a3929f', glow: 'rgba(216,27,74,.18)' } },
+];
+
+const icon = d => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const I = {
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.6 5.4"/>',
+  bot: '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13v2M15 13v2"/>',
+  team: '<circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M2.5 18c.5-2.7 2.2-4.2 4.5-4.2s4 1.5 4.5 4.2M12.5 18c.5-2.7 2.2-4.2 4.5-4.2s4 1.5 4.5 4.2"/>',
+  play: '<path d="M7 4v16l13-8z"/>',
+};
+
+const demo = (t, n) => `
+  <header><h2><span>${n}</span>${t.name}</h2><p>${t.desc}</p></header>
+  <div class="swatch-row">${[t.v.red, t.v.red2, t.v.deep, t.v.soft, t.v.panel2].map(c => `<i style="background:${c}"></i>`).join('')}</div>
+  <div class="hero" style="padding-top:4px"><div class="hero-stripes"></div><div class="kicker">Dart Counter</div><h1 class="hero-title">Game<span>On.</span></h1></div>
+  <a class="go-bar"><span><small>Weiterspielen</small>501 · Paul vs. Bot</span>${icon(I.play).replace('class="ico"', 'class="ico go-ico"')}</a>
+  <div class="block-head"><h2>X01 <em>Match</em></h2></div>
+  <div class="score-pick"><button>301</button><button class="on">501</button><button>701</button></div>
+  <div class="mode-grid">
+    <button class="mode-tile">${icon(I.user)}<b>Solo</b><span>allein üben</span></button>
+    <button class="mode-tile">${icon(I.bot)}<b>Dartbot</b><span>Stufe 5</span></button>
+  </div>
+  <div class="strip"><button class="strip-main"><span class="strip-n">1→20</span><span class="strip-text"><b>Around the Clock</b><span>Triff 1 bis 20</span></span></button></div>
+  <div class="scoreboard">
+    <div class="sb-row act" style="--pc:#ef233c"><div class="sb-name"><span class="sb-names"><span class="cur">Paul</span></span><span class="sb-meta">Ø 58,4 · 12 Darts</span></div><div class="sb-box">1</div><div class="sb-score">121</div></div>
+    <div class="sb-row" style="--pc:#3b82f6"><div class="sb-name"><span class="sb-names"><span class="cur">Anna</span></span><span class="sb-meta">Ø 52,1 · 12 Darts</span></div><div class="sb-box">0</div><div class="sb-score">184</div></div>
+  </div>
+  <div class="sb-info"><div class="sb-turn"><span class="dot" style="--c:#ef233c"></span><b>Paul</b><span>am Wurf</span></div><div class="sb-route"><span>T20</span><span>11</span><span>Bull</span></div></div>
+  <div class="mini-kp"><button>7</button><button>8</button><button>9</button><button style="color:var(--muted)">⌫</button><button>0</button><button class="ok">OK</button></div>
+  <button class="btn primary big full">${icon(I.play)} 501 starten</button>
+  <div class="nav-demo"><span class="on">Spielen</span><span>Spieler</span><span>Statistik</span><span>Optionen</span></div>`;
+
+document.getElementById('grid').innerHTML = THEMES.map((t, i) => {
+  const v = t.v;
+  const style = `--red:${v.red};--red-2:${v.red2};--red-deep:${v.deep};--accent-soft:${v.soft};--bg:${v.bg};--panel:${v.panel};--panel-2:${v.panel2};--panel-3:${v.panel3};--line:${v.line};--muted:${v.muted};--glow:${v.glow};--accent:${v.red};--accent-glow:0 8px 26px color-mix(in srgb, ${v.red} 35%, transparent)`;
+  return `<section class="theme" style="${style}">${demo(t, i + 1)}</section>`;
+}).join('');
+</script>
+</body>
+</html>

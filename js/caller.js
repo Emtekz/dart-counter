@@ -77,6 +77,9 @@ export function warmUp() {
 }
 
 export const caller = {
+  bullWinner(name) {
+    speak(`${name} wins the bull and throws first. Game on!`);
+  },
   gameOn(name) {
     speak(`${name} to throw first. Game on!`);
   },

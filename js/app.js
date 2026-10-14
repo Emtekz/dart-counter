@@ -55,7 +55,7 @@ const DOUBLE_CHOICES = [...Array.from({ length: 20 }, (_, i) => [i + 1, 'D' + (i
 const GAMES = {
   x01: {
     name: 'X01', cat: 'match', desc: '301 · 501 · 701 mit Legs, Sets, Double Out', bots: true, teams: true,
-    defaults: { start: 501, in: 'single', out: 'double', format: 'legs', legs: 3, sets: 3 },
+    defaults: { start: 501, in: 'single', out: 'double', format: 'legs', legs: 3, sets: 3, throwOff: 'order' },
     options: [
       { key: 'start', label: 'Startpunkte', choices: [[101, '101'], [301, '301'], [501, '501'], [701, '701'], [901, '901']] },
       { key: 'in', label: 'Check-In', choices: [['single', 'Straight In'], ['double', 'Double In']] },
@@ -63,6 +63,7 @@ const GAMES = {
       { key: 'format', label: 'Format', choices: [['legs', 'Legs'], ['sets', 'Sets']] },
       { key: 'legs', label: o => (o.format === 'sets' ? 'Legs pro Set (First to)' : 'Legs (First to)'), choices: range(1, 7) },
       { key: 'sets', label: 'Sets (First to)', choices: range(1, 5), show: o => o.format === 'sets' },
+      { key: 'throwOff', label: 'Wer beginnt?', choices: [['order', 'Reihenfolge'], ['bull', 'Ausbullen']] },
     ],
   },
   atc: {
@@ -183,6 +184,7 @@ function render() {
   let html;
   switch (r) {
     case 'play': html = route.arg && GAMES[route.arg] ? viewSetup(route.arg) : (go('#/'), ''); break;
+    case 'bulloff': html = ui.bull ? viewBullOff() : (go('#/'), ''); break;
     case 'game': html = db.current ? viewGame() : (go('#/'), ''); break;
     case 'result': html = viewResult(route.arg); break;
     case 'players': html = viewPlayers(); break;
@@ -192,7 +194,9 @@ function render() {
     default: html = viewHome();
   }
   const inGame = r === 'game';
-  app.innerHTML = inGame ? html : `<main class="page ${r === 'play' ? 'with-cta' : ''}">${html}</main>${r === 'play' ? '' : nav(r)}`;
+  const flow = r === 'play' || r === 'bulloff';
+  app.innerHTML = inGame ? html : `<main class="page ${flow ? 'with-cta' : ''}">${html}</main>${flow ? '' : nav(r)}`;
+  if (r === 'bulloff') scheduleBullBot();
   document.body.classList.toggle('in-game', inGame);
   if (inGame) { scheduleBot(); keepAwake(); } else releaseAwake();
 }
@@ -428,14 +432,90 @@ function startFromSetup() {
         return { name: `Team ${t + 1}`, members };
       });
     } else sides = players.map((p, i) => ({ name: p.name, members: [i] }));
+    if (s.opts.throwOff === 'bull' && sides.length > 1) {
+      ui.bull = { opts: { ...s.opts }, players, sides, res: sides.map(() => null), active: sides.map((_, i) => i), winner: null };
+      return go('#/bulloff');
+    }
     st = newX01({ ...s.opts }, players, sides);
   } else {
     st = newTraining(s.type, { ...s.opts }, players);
   }
+  launch(st);
+}
+
+function launch(st, announce = true) {
   db.current = { state: st, undo: [] };
   save();
-  if (st.type === 'x01') caller.gameOn(st.players[activeIndex(st)].name);
+  if (st.type === 'x01' && announce) caller.gameOn(st.players[activeIndex(st)].name);
   go('#/game');
+}
+
+/* ---------- Ausbullen ---------- */
+
+const BULL_RANK = { bull: 3, outer: 2, miss: 1 };
+const BULL_LABEL = { bull: 'Bullseye', outer: 'Single Bull', miss: 'Daneben' };
+
+const contestantName = (b, i) => b.sides[i].members.map(m => b.players[m].name).join(' & ');
+const contestantThrower = (b, i) => b.players[b.sides[i].members[0]];
+
+function bullStatus(b) {
+  if (b.winner != null) return { winner: b.winner };
+  if (b.active.some(i => b.res[i] == null)) return {};
+  const best = Math.max(...b.active.map(i => BULL_RANK[b.res[i]]));
+  const top = b.active.filter(i => BULL_RANK[b.res[i]] === best);
+  return top.length === 1 ? { winner: top[0] } : { tie: top };
+}
+
+function viewBullOff() {
+  const b = ui.bull, stt = bullStatus(b);
+  const rows = b.sides.map((S, i) => {
+    const pl = contestantThrower(b, i), r = b.res[i], out = !b.active.includes(i);
+    const right = out ? '<span class="muted">raus</span>'
+      : r ? `<span class="bull-res ${r}">${BULL_LABEL[r]}</span>`
+      : pl.kind === 'bot' ? `<span class="muted">${icon('bot', 'xs')} wirft …</span>`
+      : `<div class="bull-btns">
+          <button class="bull-btn bull" data-action="bull-res" data-i="${i}" data-r="bull">Bull</button>
+          <button class="bull-btn outer" data-action="bull-res" data-i="${i}" data-r="outer">25</button>
+          <button class="bull-btn miss" data-action="bull-res" data-i="${i}" data-r="miss">Daneben</button></div>`;
+    return `<div class="bull-row ${stt.winner === i ? 'win' : ''} ${out ? 'out' : ''}" style="--pc:${b.players[S.members[0]].color}">
+      <div class="bull-name">${S.members.length > 1 ? `<small>${esc(S.name)} · wirft: ${esc(pl.name)}</small>` : ''}<b>${esc(contestantName(b, i))}</b></div>${right}</div>`;
+  }).join('');
+  const tie = stt.tie ? `<section class="card bull-tie"><h3>Gleichstand!</h3>
+      <p class="muted small">Wer war näher am Bull? Antippen – oder die Beteiligten werfen nochmal.</p>
+      <div class="chips">${stt.tie.map(i => `<button class="chip" data-action="bull-pick" data-i="${i}">${esc(contestantName(b, i))} war näher</button>`).join('')}</div>
+      <button class="btn" data-action="bull-again">${icon('undo')} Nochmal werfen</button></section>` : '';
+  return `${pageHead('Ausbullen', '#/play/x01')}
+    <p class="muted">Jeder wirft einen Dart aufs Bull. Wer am nächsten dran ist, beginnt das Match.</p>
+    <div class="bull-list">${rows}</div>
+    ${tie}
+    <div class="setup-cta">
+      ${stt.winner == null ? `<div class="cta-hint">${stt.tie ? 'Gleichstand auflösen …' : 'Ergebnisse eintragen …'}</div>` : ''}
+      <button class="btn primary big full" data-action="bull-start" ${stt.winner == null ? 'disabled' : ''}>${icon('play')} ${stt.winner == null ? 'Anwurf ausbullen' : `${esc(contestantName(b, stt.winner))} beginnt`}</button>
+    </div>`;
+}
+
+function scheduleBullBot() {
+  const b = ui.bull;
+  if (!b || ui.bullTimer || route.name !== 'bulloff') return;
+  const i = b.active.find(k => b.res[k] == null && contestantThrower(b, k).kind === 'bot');
+  if (i == null) return;
+  ui.bullTimer = setTimeout(() => {
+    ui.bullTimer = null;
+    if (route.name !== 'bulloff' || ui.bull !== b) return;
+    const hit = throwAt(throwOf(25, 2), contestantThrower(b, i).level, true);
+    b.res[i] = hit.n === 25 ? (hit.m === 2 ? 'bull' : 'outer') : 'miss';
+    render();
+  }, 900);
+}
+
+function startAfterBull() {
+  const b = ui.bull, { winner } = bullStatus(b);
+  if (winner == null) return;
+  const sides = [...b.sides.slice(winner), ...b.sides.slice(0, winner)];
+  const st = newX01(b.opts, b.players, sides);
+  ui.bull = null;
+  caller.bullWinner(contestantName({ ...b, sides }, 0));
+  launch(st, false);
 }
 
 /* ---------- Spielansicht ---------- */
@@ -1188,6 +1268,15 @@ const actions = {
     })),
   }),
   start: () => startFromSetup(),
+  'bull-res': d => { ui.bull.res[+d.i] = d.r; render(); },
+  'bull-pick': d => { ui.bull.winner = +d.i; render(); },
+  'bull-again': () => {
+    const b = ui.bull, { tie } = bullStatus(b);
+    b.active = tie;
+    tie.forEach(i => (b.res[i] = null));
+    render();
+  },
+  'bull-start': () => startAfterBull(),
 
   quit: () => openModal({
     title: 'Spiel verlassen?', text: 'Du kannst das Spiel später auf der Startseite fortsetzen oder es jetzt verwerfen.',
