@@ -821,20 +821,6 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; heig
   .block-head h2 em { display: none; }
 }
 
-/* ---------- Trenner zwischen Headline und Inhalt (TV-Bauchbinde) ---------- */
-.hero-band {
-  position: relative; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  margin: 2px 0 6px; padding: 9px 26px 9px 18px;
-  background: linear-gradient(100deg, var(--red) 0%, var(--red-2) 70%, transparent 100%);
-  clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
-  font-family: var(--display); font-weight: 800; font-size: .95rem; letter-spacing: .28em; text-transform: uppercase; color: #fff;
-}
-.hero-band::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -7px; height: 2px;
-  background: linear-gradient(90deg, var(--red), transparent 75%);
-}
-.hero-band i { width: 6px; height: 6px; background: #fff; opacity: .7; transform: skewX(-20deg); }
-.page > .hero-band + section.block { margin-top: 22px; }
-@media (max-width: 520px) {
-  .hero-band { font-size: .78rem; letter-spacing: .18em; gap: 9px; padding: 8px 22px 8px 14px; }
-}
+/* ---------- Dezenter Trenner zwischen Headline und Inhalt ---------- */
+.hero-divider { height: 2px; margin: 4px 0 2px; background: linear-gradient(90deg, var(--red), var(--red-2) 45%, transparent 90%); opacity: .55; }
+.page > .hero-divider + section.block { margin-top: 18px; }

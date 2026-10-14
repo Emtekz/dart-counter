@@ -247,7 +247,7 @@ function viewHome() {
     <h1 class="hero-title">Game<span>On.</span></h1>
   </header>
 
-  <div class="hero-band" aria-hidden="true"><span>Zählen</span><i></i><span>Trainieren</span><i></i><span>Besser werden</span></div>
+  <div class="hero-divider" aria-hidden="true"></div>
 
   ${favoritesBlock()}
 
