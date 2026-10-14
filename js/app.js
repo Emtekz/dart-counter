@@ -1338,3 +1338,6 @@ document.addEventListener('visibilitychange', () => {
 onVoices(() => { if (route.name === 'settings') render(); });
 render();
 initSync(onSyncChange);
+
+// Immer die aktuelle Version laden (und offline weiterspielen können)
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
