@@ -8,7 +8,6 @@ import { lineChart, barChart, resetCharts, chartWidth } from './charts.js';
 import { sync, initSync, signIn, signOut, statusText } from './sync.js';
 import { rulesHtml } from './rules.js';
 import { AVATARS, avatar, avatarSvg } from './avatars.js';
-import { caller, englishVoices, onVoices, warmUp } from './caller.js';
 
 /* ---------- Hilfsfunktionen ---------- */
 
@@ -453,10 +452,9 @@ function startFromSetup() {
   launch(st);
 }
 
-function launch(st, announce = true) {
+function launch(st) {
   db.current = { state: st, undo: [] };
   save();
-  if (st.type === 'x01' && announce) caller.gameOn(st.players[activeIndex(st)].name);
   go('#/game');
 }
 
@@ -524,8 +522,7 @@ function startAfterBull() {
   const sides = [...b.sides.slice(winner), ...b.sides.slice(0, winner)];
   const st = newX01(b.opts, b.players, sides);
   ui.bull = null;
-  caller.bullWinner(contestantName({ ...b, sides }, 0));
-  launch(st, false);
+  launch(st);
 }
 
 /* ---------- Spielansicht ---------- */
@@ -762,20 +759,11 @@ function onVisit(st, v, legBefore) {
       const S = st.sides[st.legEvent.side];
       const who = S.members.map(m => st.players[m].name).join(' & ');
       toast(`${icon('trophy')} <b>${esc(who)}</b> gewinnt ${st.legEvent.setWon ? 'das Set' : 'das Leg'}<br><span class="small">${st.legEvent.darts} Darts · Checkout ${st.legEvent.checkout}</span>`, 'big', 2600);
-      caller.leg(who, legBefore, st.legEvent.setWon);
     }
     return;
   }
-  if (v.bust) {
-    caller.score(0, true);
-    toast('Bust!', 'bad');
-  } else {
-    caller.score(v.score);
-    if (v.score === 180) toast('🎯 ONE HUNDRED AND EIGHTY!', 'big', 2200);
-  }
-  // Ansager: „Paul, you require 121“, wenn der nächste Spieler checken kann
-  const side = L.turn, rem = L.rem[side];
-  if (L.opened[side] && checkoutRoute(rem, 3, st.config.out)) caller.require(st.players[activeIndex(st)].name, rem);
+  if (v.bust) toast('Bust!', 'bad');
+  else if (v.score === 180) toast('🎯 ONE HUNDRED AND EIGHTY!', 'big', 2200);
 }
 
 function undo() {
@@ -831,7 +819,6 @@ function finishGame() {
   save();
   if (st.type === 'x01') {
     const w = st.sides[st.winner];
-    caller.match(w.members.map(m => st.players[m].name).join(' and '));
   }
   go('#/result/' + rec.id);
 }
@@ -932,7 +919,6 @@ function rematch(id) {
   }
   db.current = { state: st, undo: [] };
   save();
-  if (st.type === 'x01') caller.gameOn(st.players[activeIndex(st)].name);
   go('#/game');
 }
 
@@ -1180,18 +1166,6 @@ function viewSettings() {
     <div class="opt"><label>X01-Eingabe</label>${seg('inputMode', [['total', 'Gesamtpunkte'], ['darts', 'Einzeldarts']])}
       <p class="muted small">Auch im Spiel über das Symbol oben rechts umschaltbar.</p></div>
     <div class="opt"><label>Farbe</label>${seg('theme', [['red', 'Rot'], ['bordeaux', 'Bordeaux / Purpur']])}</div>
-    <div class="opt"><label>Caller (englische Ansage wie im TV)</label>${seg('speech', [[false, 'Aus'], [true, 'An']])}
-      <p class="muted small">Sagt Scores an („One hundred and eighty!“), Checkouts („Paul, you require 121“) und „Game shot“.</p></div>
-    ${'speechSynthesis' in window ? `<div class="opt"><label>Stimme</label>
-      <div class="row gap wrap"><select id="caller-voice" class="input grow">
-        <option value="">Automatisch (natürlichste Stimme)</option>
-        ${englishVoices().map(v => `<option value="${esc(v.voiceURI)}" ${db.settings.callerVoice === v.voiceURI ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}
-      </select><button class="btn" data-action="caller-test">Probehören</button></div></div>
-    <div class="opt"><label>Tonhöhe · <span class="muted">${f1(db.settings.callerPitch ?? 0.8)}</span></label>
-      <input type="range" id="caller-pitch" class="range" min="0.5" max="1.3" step="0.05" value="${db.settings.callerPitch ?? 0.8}"></div>
-    <div class="opt"><label>Tempo · <span class="muted">${f1(db.settings.callerRate ?? 1)}</span></label>
-      <input type="range" id="caller-rate" class="range" min="0.7" max="1.4" step="0.05" value="${db.settings.callerRate ?? 1}">
-      <p class="muted small">Tipp: Eine männliche britische Stimme klingt am ehesten nach Caller (z. B. „Ryan“, „George“, „Daniel“ oder „Google UK English Male“). Stimmen mit „Online“ oder „Google“ im Namen klingen natürlicher, laden aber übers Internet und kommen leicht verzögert – Stimmen ohne diesen Zusatz liegen auf dem Gerät und sind sofort da. Auf dem iPhone unter Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen eine „Erweitert“-Stimme (Englisch UK) laden.</p></div>` : ''}
   </section>
   ${syncCard()}
   <section class="card">
@@ -1382,7 +1356,6 @@ const actions = {
     go('#/players');
   }),
   sort: d => { ui.statsSort = d.k; render(); },
-  'caller-test': () => caller.test(),
   range: d => { ui.range = d.v; render(); },
   setting: d => { db.settings[d.key] = JSON.parse(d.value); save(); render(); },
   export: () => {
@@ -1401,7 +1374,6 @@ const actions = {
 };
 
 document.addEventListener('click', e => {
-  warmUp();
   const el = e.target.closest('[data-action]');
   if (!el || el.disabled) return;
   const fn = actions[el.dataset.action];
@@ -1423,13 +1395,6 @@ document.addEventListener('submit', e => {
 });
 
 document.addEventListener('change', e => {
-  if (e.target.id === 'caller-pitch' || e.target.id === 'caller-rate') {
-    db.settings[e.target.id === 'caller-pitch' ? 'callerPitch' : 'callerRate'] = +e.target.value;
-    save();
-    caller.test();
-    return render();
-  }
-  if (e.target.id === 'caller-voice') { db.settings.callerVoice = e.target.value || null; save(); caller.test(); return; }
   if (e.target.id !== 'import-file') return;
   const file = e.target.files[0];
   if (!file) return;
@@ -1483,7 +1448,6 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && route.name === 'game') { ui.wake = null; keepAwake(); }
 });
 
-onVoices(() => { if (route.name === 'settings') render(); });
 render();
 initSync(onSyncChange);
 

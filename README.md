@@ -38,7 +38,6 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
 - Synchronisation zwischen Geräten per Google-Anmeldung (Firebase)
 - Spielhistorie mit Detailansicht und Revanche
 - Rückgängig-Funktion, Spiel pausieren und später fortsetzen
-- Englischer Caller wie im TV („One hundred and eighty!“, „Paul, you require 121“, „Game shot!“) mit Auswahl der Stimme
 - „Broadcast“-Design im Stil von TV-Dartgrafiken (Schrift Barlow Condensed, lokal eingebunden), Farbe Rot oder Bordeaux/Purpur
 - Daten-Export/Import (JSON) – alle Daten bleiben lokal im Browser (localStorage)
 
