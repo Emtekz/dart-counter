@@ -3,7 +3,8 @@ import { newX01, submitTotal, throwDart, activeIndex, curScore, x01Results, vali
 import { newTraining, trainingInput, trainingResults, variantOf, dlabel, pct } from './training.js';
 import { checkoutRoute, minDarts, throwOf } from './checkout.js';
 import { chooseTarget, throwAt, BOT_LEVELS } from './bot.js';
-import { x01Agg, trainingAgg, gamesOf, trainingBoards } from './stats.js';
+import { x01Agg, trainingAgg, gamesOf, trainingBoards, rangeStart, x01Matches, trainingHistory, bucketUnit, bucketRange, groupBy } from './stats.js';
+import { lineChart, barChart, resetCharts, chartWidth } from './charts.js';
 import { sync, initSync, signIn, signOut, statusText } from './sync.js';
 
 /* ---------- Hilfsfunktionen ---------- */
@@ -103,7 +104,7 @@ const GAME_ART = {
 
 /* ---------- UI-Zustand ---------- */
 
-const ui = { setup: null, input: '', mod: 1, modal: null, botTimer: null, statsSort: 'avg', wake: null };
+const ui = { setup: null, input: '', mod: 1, modal: null, botTimer: null, statsSort: 'avg', range: 'all', wake: null };
 
 let route = parseHash();
 window.addEventListener('hashchange', () => {
@@ -182,6 +183,7 @@ function render() {
   document.documentElement.dataset.theme = db.settings.theme;
   const r = route.name;
   if (r !== 'game') stopBot();
+  resetCharts();
   let html;
   switch (r) {
     case 'play': html = route.arg && GAMES[route.arg] ? viewSetup(route.arg) : viewPlay(); break;
@@ -812,8 +814,11 @@ function viewPlayer(id) {
     ${tile('180er', a.s180, `140+: ${a.s140} · 100+: ${a.s100}`)}
     ${tile('Legs gewonnen', a.legsWon, `von ${a.legsPlayed}`)}
   </div>
-  ${a.trend.length > 1 ? `<section class="card"><h3>Average-Verlauf</h3>${trendChart(a.trend.slice(-30), p.color)}</section>` : ''}`
+`
     : '<p class="muted">Noch keine X01-Matches.</p>'}
+
+  <h3 class="section-title">Verlauf</h3>
+  ${playerCharts(id)}
 
   <h3 class="section-title">Training</h3>
   ${tr.length ? `<div class="list">${tr.map(e => `<div class="list-row static"><span class="badge train">${GAME_ART[e.type]}</span>
@@ -826,23 +831,119 @@ function viewPlayer(id) {
   <button class="btn ghost danger-text" data-action="delete-player" data-id="${id}">${icon('trash')} Spieler löschen</button>`;
 }
 
-function trendChart(points, color) {
-  const W = 320, H = 120, P = 22;
-  const vals = points.map(p => p.avg);
-  const min = Math.floor(Math.min(...vals) / 5) * 5, max = Math.ceil(Math.max(...vals) / 5) * 5 || 5;
-  const span = max - min || 5;
-  const x = i => P + (i * (W - P - 6)) / (vals.length - 1);
-  const y = v => 8 + (H - 24) * (1 - (v - min) / span);
-  const line = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-  return `<svg class="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average-Verlauf der letzten ${vals.length} Matches">
-    <line x1="${P}" x2="${W - 6}" y1="${y(max)}" y2="${y(max)}" class="grid"/><line x1="${P}" x2="${W - 6}" y1="${y(min)}" y2="${y(min)}" class="grid"/>
-    <text x="0" y="${y(max) + 4}" class="axis">${max}</text><text x="0" y="${y(min) + 4}" class="axis">${min}</text>
-    <line x1="${P}" x2="${W - 6}" y1="${y(mean)}" y2="${y(mean)}" class="mean"/>
-    <polyline points="${line}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${vals.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${color}"><title>${f1(v)} – ${fmtDate(points[i].date)}</title></circle>`).join('')}
-    <text x="${W - 6}" y="${H - 2}" class="axis" text-anchor="end">Ø ${f1(mean)} · letzte ${vals.length} Matches</text>
-  </svg>`;
+/* ---------- Diagramme ---------- */
+
+const DAY = 86400000;
+const RANGES = [['30', '30 Tage'], ['90', '90 Tage'], ['365', '1 Jahr'], ['all', 'Alles']];
+
+// Per Validator geprüft (Kontrast, Farbfehlsichtigkeit) gegen die Kartenflächen beider Designs
+const CHART_COLORS = {
+  dark: { avg: '#ef233c', f9: '#3987e5', ramp: ['#a3263a', '#dc2a44', '#ff7a88'] },
+  light: { avg: '#dc1f36', f9: '#2a78d6', ramp: ['#ec7d8a', '#d63046', '#8f0d20'] },
+};
+const pal = () => CHART_COLORS[db.settings.theme] || CHART_COLORS.dark;
+
+const rangeBar = () => `<div class="filter-row"><div class="seg">${RANGES.map(([v, l]) =>
+  `<button class="${ui.range === v ? 'on' : ''}" data-action="range" data-v="${v}">${l}</button>`).join('')}</div></div>`;
+
+const shortDate = ts => new Date(ts).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+const fullDate = ts => new Date(ts).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+
+function periodPoints(keys, unit) {
+  const pts = keys.map(k => unit === 'month'
+    ? { label: new Date(k).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }), tick: new Date(k).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }) }
+    : { label: `Woche ${fullDate(k)} – ${fullDate(k + 6 * DAY)}`, tick: shortDate(k) });
+  pts.header = unit === 'month' ? 'Monat' : 'Woche ab';
+  return pts;
+}
+
+const chartCard = (title, sub, body) => `<section class="card chart-card"><div class="chart-head"><h3>${title}</h3>${sub ? `<span class="muted small">${sub}</span>` : ''}</div>${body}</section>`;
+const axisNum = (v, axis) => (axis ? f0(v) : f1(v));
+
+function multiWidth() {
+  const page = Math.min(window.innerWidth, 920) - 32;
+  return window.innerWidth >= 640 ? Math.floor((page - 10) / 2) - 34 : page - 34;
+}
+
+function playerCharts(pid) {
+  const since = rangeStart(ui.range);
+  const ms = x01Matches(pid, since);
+  const tr = trainingHistory(pid, since).filter(e => e.rows.length >= 2);
+  const C = pal();
+  let html = rangeBar();
+
+  if (ms.length >= 2) {
+    const pts = ms.map(m => ({ label: `${fmtDate(m.date)}${m.opp ? ' · vs. ' + m.opp : ''} · ${m.won ? 'Sieg' : 'Niederlage'}`, tick: shortDate(m.date) }));
+    pts.header = 'Match';
+    html += chartCard('Average je Match', `${ms.length} Matches`, lineChart({
+      points: pts, fmt: axisNum, ariaLabel: `3-Dart-Average und First-9-Average der letzten ${ms.length} Matches`,
+      series: [{ name: '3-Dart-Ø', color: C.avg, values: ms.map(m => m.avg) }, { name: 'First 9 Ø', color: C.f9, values: ms.map(m => m.f9) }],
+    }));
+
+    const dates = ms.map(m => m.date), unit = bucketUnit(dates), keys = bucketRange(dates, unit), groups = groupBy(ms, unit);
+    const per = unit === 'month' ? 'Monat' : 'Woche';
+    const sum = (k, f) => (groups.get(k) || []).reduce((a, m) => a + m[f], 0);
+    const co = keys.map(k => (sum(k, 'coAtt') ? (sum(k, 'coDone') / sum(k, 'coAtt')) * 100 : null));
+    html += chartCard(`Checkout-Quote je ${per}`, 'erfolgreiche Checks / Aufnahmen mit checkbarem Rest', barChart({
+      points: periodPoints(keys, unit), max: 100, ariaLabel: `Checkout-Quote je ${per}`,
+      fmt: (v, axis) => (axis ? v + ' %' : Math.round(v) + ' %'),
+      capLabel: (i, t) => Math.round(t) + ' %',
+      series: [{ name: 'Checkout-Quote', color: C.avg, values: co }],
+    }));
+
+    const hs = ['s100', 's140', 's180'].map(f => keys.map(k => sum(k, f)));
+    if (hs.some(s => s.some(v => v > 0))) {
+      html += chartCard(`Hohe Aufnahmen je ${per}`, '', barChart({
+        points: periodPoints(keys, unit), ariaLabel: `Anzahl Aufnahmen ab 100, ab 140 und 180er je ${per}`,
+        fmt: v => f0(v), capLabel: (i, t) => t,
+        series: [{ name: '100–139', color: C.ramp[0], values: hs[0] }, { name: '140–179', color: C.ramp[1], values: hs[1] }, { name: '180', color: C.ramp[2], values: hs[2] }],
+      }));
+    }
+  } else if (ms.length === 1) {
+    html += '<p class="muted small">Ab 2 X01-Matches im gewählten Zeitraum erscheinen hier Verlaufsdiagramme.</p>';
+  }
+
+  if (tr.length) {
+    html += `<div class="multiples">${tr.map(e => {
+      const pts = e.rows.map(r => ({ label: fmtDate(r.date), tick: shortDate(r.date) }));
+      pts.header = 'Datum';
+      const best = e.better === 'low' ? Math.min(...e.rows.map(r => r.metric)) : Math.max(...e.rows.map(r => r.metric));
+      return chartCard(esc(e.label), `Bestwert ${fm(best)} ${e.unit}${e.better === 'low' ? ' · weniger ist besser' : ''}`, lineChart({
+        points: pts, width: multiWidth(), height: 160, area: true, ariaLabel: `${e.label}: Verlauf in ${e.unit}`,
+        fmt: (v, axis) => (axis ? f0(v) : fm(v) + (e.unit === 'Ø' ? '' : ' ' + e.unit)),
+        series: [{ name: e.unit, color: C.avg, values: e.rows.map(r => r.metric) }],
+      }));
+    }).join('')}</div>`;
+  }
+
+  if (ms.length < 2 && !tr.length) {
+    html += `<p class="muted small">${ui.range === 'all' ? 'Noch zu wenige Spiele für Diagramme – ab 2 Matches bzw. 2 Trainings derselben Art geht’s los.' : 'Im gewählten Zeitraum gibt es zu wenige Spiele.'}</p>`;
+  }
+  return html;
+}
+
+function compareChart() {
+  const since = rangeStart(ui.range);
+  const ps = db.players.map(p => ({ p, ms: x01Matches(p.id, since) })).filter(x => x.ms.length).sort((a, b) => b.ms.length - a.ms.length).slice(0, 8);
+  const dates = ps.flatMap(x => x.ms.map(m => m.date));
+  if (!ps.length) return `${rangeBar()}<p class="muted small">Keine X01-Matches im gewählten Zeitraum.</p>`;
+  const unit = bucketUnit(dates), keys = bucketRange(dates, unit);
+  if (keys.length < 2) return `${rangeBar()}<p class="muted small">Der Average-Vergleich erscheint, sobald Matches aus mindestens zwei ${unit === 'month' ? 'Monaten' : 'Wochen'} vorliegen.</p>`;
+  const series = ps.map(({ p, ms }) => {
+    const g = groupBy(ms, unit);
+    return {
+      name: p.name, color: p.color,
+      values: keys.map(k => {
+        const rows = g.get(k);
+        if (!rows) return null;
+        const d = rows.reduce((a, m) => a + m.darts, 0);
+        return d ? (rows.reduce((a, m) => a + m.points, 0) / d) * 3 : null;
+      }),
+    };
+  });
+  return rangeBar() + chartCard(`Average je ${unit === 'month' ? 'Monat' : 'Woche'}`, 'alle Spieler im Vergleich', lineChart({
+    points: periodPoints(keys, unit), series, fmt: axisNum, ariaLabel: 'Average-Verlauf aller Spieler im Vergleich', endName: true,
+  }));
 }
 
 /* ---------- Statistik ---------- */
@@ -866,6 +967,8 @@ function viewStats() {
   ${rows.length ? `<div class="table-wrap"><table class="stats-table lb"><thead><tr><th>#</th><th class="left">Spieler</th>${cols.map(([key, l]) => `<th><button class="sort ${k === key ? 'on' : ''}" data-action="sort" data-k="${key}">${l}</button></th>`).join('')}</tr></thead>
     <tbody>${rows.map(({ p, a }, i) => `<tr><td>${i + 1}</td><td class="left"><a href="#/player/${p.id}">${dot(p.color)}${esc(p.name)}</a></td>${cols.map(([, , fn]) => `<td>${fn(a)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
     : '<p class="muted">Noch keine X01-Matches mit Profilen.</p>'}</section>
+
+  ${rows.length ? `<h3 class="section-title">Verlauf</h3>${compareChart()}` : ''}
 
   <h3 class="section-title">Trainings-Bestenlisten</h3>
   ${boards.length ? `<div class="board-grid">${boards.map(b => `<section class="card"><h4>${esc(b.label)}</h4>
@@ -1037,6 +1140,7 @@ const actions = {
     go('#/players');
   }),
   sort: d => { ui.statsSort = d.k; render(); },
+  range: d => { ui.range = d.v; render(); },
   setting: d => { db.settings[d.key] = JSON.parse(d.value); save(); render(); },
   export: () => {
     const blob = new Blob([exportData()], { type: 'application/json' });
@@ -1112,6 +1216,16 @@ document.addEventListener('keydown', e => {
     if (/^\d$/.test(e.key) && +e.key <= max) act(s => trainingInput(s, +e.key));
     else if (e.key === 'Backspace') undo();
   }
+});
+
+let lastChartW = chartWidth(), resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const w = chartWidth();
+    if (w !== lastChartW && ['player', 'stats'].includes(route.name)) { const y = window.scrollY; render(); window.scrollTo(0, y); }
+    lastChartW = w;
+  }, 200);
 });
 
 document.addEventListener('visibilitychange', () => {

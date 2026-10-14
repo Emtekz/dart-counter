@@ -63,3 +63,85 @@ export function trainingBoards() {
   for (const b of boards.values()) b.rows.sort((x, y) => (b.better === 'low' ? x.best - y.best : y.best - x.best));
   return [...boards.values()];
 }
+
+/* ---------- Zeitverläufe ---------- */
+
+const DAY = 86400000;
+
+/** Zeitraum-Filter: '30' | '90' | '365' | 'all' → Startzeitpunkt */
+export function rangeStart(range) {
+  return range === 'all' ? 0 : Date.now() - +range * DAY;
+}
+
+/** X01-Matches eines Spielers in zeitlicher Reihenfolge. */
+export function x01Matches(pid, since = 0) {
+  const rows = [];
+  for (const g of db.games) {
+    if (g.type !== 'x01' || g.date < since) continue;
+    g.players.forEach((p, i) => {
+      if (p.playerId !== pid) return;
+      const r = g.results[i];
+      if (!r.darts) return;
+      const opp = g.sides.filter(s => !s.members.includes(i)).map(s => s.members.map(m => g.players[m].name).join(' & ')).join(', ');
+      rows.push({
+        date: g.date, avg: (r.points / r.darts) * 3, f9: r.f9d ? (r.f9p / r.f9d) * 3 : null,
+        points: r.points, darts: r.darts, coDone: r.coDone, coAtt: r.coAtt,
+        s100: r.s100, s140: r.s140, s180: r.s180, won: r.won, opp,
+      });
+    });
+  }
+  return rows;
+}
+
+/** Trainingsverläufe eines Spielers je Variante. */
+export function trainingHistory(pid, since = 0) {
+  const map = new Map();
+  for (const g of db.games) {
+    if (g.type === 'x01' || g.date < since) continue;
+    g.players.forEach((p, i) => {
+      if (p.playerId !== pid) return;
+      const r = g.results[i];
+      let e = map.get(g.variant.key);
+      if (!e) map.set(g.variant.key, (e = { key: g.variant.key, label: g.variant.label, type: g.type, unit: r.unit, better: r.better, rows: [] }));
+      e.rows.push({ date: g.date, metric: r.metric });
+    });
+  }
+  return [...map.values()];
+}
+
+/** Zeitliche Gruppierung: Wochen bei bis zu ~4 Monaten Spanne, sonst Monate. */
+export function bucketUnit(dates) {
+  if (!dates.length) return 'week';
+  return Math.max(...dates) - Math.min(...dates) <= 120 * DAY ? 'week' : 'month';
+}
+
+export function bucketKey(ts, unit) {
+  const d = new Date(ts);
+  if (unit === 'month') return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+  const day = (d.getDay() + 6) % 7; // Montag = 0
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - day).getTime();
+}
+
+/** Lückenlose Liste von Perioden zwischen erstem und letztem Zeitpunkt. */
+export function bucketRange(dates, unit) {
+  if (!dates.length) return [];
+  const out = [];
+  let k = bucketKey(Math.min(...dates), unit);
+  const end = bucketKey(Math.max(...dates), unit);
+  while (k <= end) {
+    out.push(k);
+    const d = new Date(k);
+    k = unit === 'month' ? new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime() : new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7).getTime();
+  }
+  return out;
+}
+
+export function groupBy(rows, unit) {
+  const m = new Map();
+  for (const r of rows) {
+    const k = bucketKey(r.date, unit);
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(r);
+  }
+  return m;
+}
