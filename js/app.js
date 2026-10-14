@@ -207,9 +207,11 @@ function nav(r) {
   const item = (hash, name, ic, label) =>
     `<a href="${hash}" class="nav-item ${r === name || (name === 'players' && r === 'player') ? 'active' : ''}">${icon(ic)}<span>${label}</span></a>`;
   return `<nav class="nav">
-    ${db.current
-      ? `<a href="#/game" class="nav-item nav-live ${r === 'home' ? 'active' : ''}" title="Pausiertes Spiel fortsetzen">${icon('target')}<span>Spielen</span><i class="nav-dot" aria-label="Spiel läuft"></i></a>`
-      : item('#/', 'home', 'target', 'Spielen')}
+    ${!db.current ? item('#/', 'home', 'target', 'Spielen')
+      // Pausiertes Spiel: „Spielen“ führt zur Startseite; dort wird daraus „Weiter“ ins Spiel
+      : r === 'home'
+        ? `<a href="#/game" class="nav-item nav-live nav-resume active" title="Pausiertes Spiel fortsetzen">${icon('play')}<span>Weiter</span><i class="nav-dot"></i></a>`
+        : `<a href="#/" class="nav-item nav-live" title="Startseite – ein Spiel ist pausiert">${icon('target')}<span>Spielen</span><i class="nav-dot" aria-label="Spiel pausiert"></i></a>`}
     ${item('#/players', 'players', 'users', 'Spieler')}
     ${item('#/stats', 'stats', 'chart', 'Statistik')}
     ${item('#/settings', 'settings', 'settings', 'Optionen')}

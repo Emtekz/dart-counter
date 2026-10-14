@@ -805,3 +805,5 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; heig
   animation: navlive 1.6s ease-in-out infinite;
 }
 @keyframes navlive { 50% { opacity: .35; transform: scale(.8); } }
+.nav-resume { color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--red) 45%, transparent), color-mix(in srgb, var(--red-2) 15%, transparent)); }
+.nav-resume .ico { color: #fff; fill: #fff; stroke: none; }
