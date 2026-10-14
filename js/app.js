@@ -94,11 +94,13 @@ const GAMES = {
     ],
   },
   c121: {
-    name: 'Checkout 121', cat: 'training', desc: '121 in 9 Darts checken – dann geht’s höher',
-    defaults: { attempts: 10, onFail: 'stay' },
+    name: 'Checkout 121', cat: 'training', desc: 'Ab 121 aufwärts checken – mit Checkpoints und Leben',
+    defaults: { darts: 9, checkpoint: 6, onFail: 'checkpoint', lives: 3 },
     options: [
-      { key: 'attempts', label: 'Versuche', choices: [[5, '5'], [10, '10'], [20, '20']] },
-      { key: 'onFail', label: 'Bei Fehlversuch', choices: [['stay', 'Ziel bleibt'], ['reset', 'Zurück auf 121']] },
+      { key: 'darts', label: 'Darts pro Ziel', choices: [[3, '3'], [6, '6'], [9, '9'], [12, '12'], [15, '15']] },
+      { key: 'checkpoint', label: 'Checkpoint, wenn gecheckt in …', choices: o => [[0, 'Aus'], ...[3, 6, 9, 12].filter(d => d < o.darts).map(d => [d, `≤ ${d} Darts`])] },
+      { key: 'onFail', label: 'Bei Fehlversuch', choices: [['checkpoint', 'Zurück zum Checkpoint'], ['stay', 'Ziel bleibt']] },
+      { key: 'lives', label: 'Leben', choices: range(1, 5) },
     ],
   },
 };
@@ -337,6 +339,7 @@ function initSetup(type) {
     .filter(p => def.bots || p.kind !== 'bot');
   if (!parts.length && db.players[0]) parts.push(partFromPlayer(db.players[0]));
   ui.setup = { type, opts: { ...def.defaults, ...(last?.opts || {}) }, parts, teams: !!(last?.teams && def.teams) };
+  normalizeOpts(ui.setup);
 }
 
 /** Voreinstellungen aus den Schnellwahl-Knöpfen der Startseite. */
@@ -370,7 +373,7 @@ function viewSetup(type) {
   const s = ui.setup, def = GAMES[type];
   const opts = def.options.filter(o => !o.show || o.show(s.opts)).map(o => `
     <div class="opt"><label>${typeof o.label === 'function' ? o.label(s.opts) : o.label}</label>
-    <div class="seg ${o.choices.length > 6 ? 'wrap' : ''}">${o.choices.map(([v, l]) =>
+    <div class="seg ${choicesOf(o, s.opts).length > 6 ? 'wrap' : ''}">${choicesOf(o, s.opts).map(([v, l]) =>
       `<button class="${s.opts[o.key] === v ? 'on' : ''}" data-action="opt" data-key="${o.key}" data-value="${J(v)}">${l}</button>`).join('')}</div></div>`).join('');
 
   // Spieler-Auswahl: Profile antippen (Reihenfolge = Wurfreihenfolge), Gäste/Bots mit ✕ entfernen
@@ -660,7 +663,7 @@ function viewTraining(st) {
       case 'bobs27': main = q.score; sub = q.out ? 'ausgeschieden' : q.done ? 'fertig' : `nächstes ${dlabel(st.targets[q.idx])}`; break;
       case 'power': main = q.total; sub = `${q.n}/${st.config.rounds} · Ø ${f1(q.n ? q.total / q.n : 0)}`; break;
       case 'doubles': main = pct(q.hits, q.darts); sub = `${q.hits}/${q.darts} · ${q.done ? 'fertig' : `${q.idx + 1}/${st.targets.length}`}`; break;
-      case 'c121': main = q.success; sub = q.done ? 'fertig' : `Ziel ${q.target} · Versuch ${q.attempt + 1}/${st.config.attempts}`; break;
+      case 'c121': main = q.best || '–'; sub = q.done ? `fertig · ${q.success} Checks` : `Ziel ${q.target} · ${hearts(q.lives, st.config.lives)} · CP ${q.checkpoint}`; break;
     }
     return `<div class="sb-row ${i === st.turn && !st.finished ? 'act' : ''} ${q.done ? 'done' : ''}" style="--pc:${x.color}">
       <div class="sb-name"><span class="sb-names"><span class="cur">${miniIcon(x.playerId)}${esc(x.name)}</span></span><span class="sb-meta">${sub}</span></div>
@@ -695,8 +698,10 @@ function viewTraining(st) {
     }
     case 'c121': {
       const route = checkoutRoute(p.rem, 3, 'double');
-      focus = focusPanel(`Ziel ${p.target} · Aufnahme ${p.visit + 1}/3`, p.rem,
-        `<span class="sb-route inline">${route ? route.map(t => `<span>${t.label}</span>`).join('') : ''}</span>`);
+      const maxD = st.config.darts || 9, from = p.visit * 3 + 1;
+      focus = focusPanel(`Ziel ${p.target} · Dart ${from}–${from + 2} von ${maxD}`, p.rem,
+        `<span class="c121-meta"><span class="hearts">${hearts(p.lives, st.config.lives)}</span><span>Checkpoint <b>${p.checkpoint}</b></span><span>Bestes <b>${p.best || '–'}</b></span></span>
+        <span class="sb-route inline">${route ? route.map(t => `<span>${t.label}</span>`).join('') : ''}</span>`);
       pad = keypad(route ? [{ v: p.rem, label: `Check ${p.rem}`, cls: 'accent' }] : []);
       break;
     }
@@ -715,6 +720,18 @@ function viewTraining(st) {
 }
 
 const focusPanel = (label, big, sub) => `<div class="focus-label">${label}</div><div class="focus-big">${big}</div><div class="focus-sub">${sub}</div>`;
+
+const hearts = (n, max) => '♥'.repeat(Math.max(0, n)) + '♡'.repeat(Math.max(0, (max || n) - n));
+
+function choicesOf(o, opts) {
+  return typeof o.choices === 'function' ? o.choices(opts) : o.choices;
+}
+
+/** Abhängige Optionen gültig halten (z. B. Checkpoint muss kleiner als Darts pro Ziel sein). */
+function normalizeOpts(s) {
+  if (s.type === 'c121' && s.opts.checkpoint >= s.opts.darts) s.opts.checkpoint = 0;
+  if (s.type === 'c121' && !['checkpoint', 'stay'].includes(s.opts.onFail)) s.opts.onFail = 'checkpoint';
+}
 
 function targetLabel(st, t) {
   if (t == null) return '✔';
@@ -1225,6 +1242,7 @@ const actions = {
   rules: d => showRules(d.type),
   opt: d => {
     ui.setup.opts[d.key] = JSON.parse(d.value);
+    normalizeOpts(ui.setup);
     rememberSetup();
     render();
   },

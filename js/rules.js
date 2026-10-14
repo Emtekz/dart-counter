@@ -65,15 +65,19 @@ export const RULES = {
     tip: 'Übe besonders D16, D20 und D8 – auf diesen Doppeln enden die meisten Checkouts.',
   },
   c121: {
-    goal: 'Checke die 121 mit höchstens 9 Darts (3 Aufnahmen) – und steigere dich dann.',
+    goal: 'Checke dich von 121 aus so weit nach oben wie möglich – bevor dir die Leben ausgehen.',
     steps: [
       'Du startest mit einem Rest von <b>121</b> und spielst wie im X01 mit Double Out.',
-      'Gib pro Aufnahme die erzielten Punkte ein – der Rest wird automatisch berechnet.',
-      'Checkst du innerhalb von 3 Aufnahmen, ist das nächste Ziel <b>122</b>, dann 123 usw.',
-      'Schaffst du es nicht, bleibt das Ziel gleich – oder springt zurück auf 121 (einstellbar).',
+      'Für jedes Ziel hast du eine feste Anzahl Darts, z. B. <b>9 Darts</b> (= 3 Aufnahmen).',
+      'Checkst du rechtzeitig, ist das nächste Ziel eine Zahl höher: 122, 123 …',
+      '<b>Checkpoint:</b> Checkst du besonders schnell (z. B. in ≤ 6 Darts), wird diese Zahl dein Checkpoint.',
+      'Schaffst du ein Ziel nicht, verlierst du ein <b>Leben</b> und musst zurück zum letzten Checkpoint (am Anfang 121) – oder das Ziel bleibt, je nach Einstellung.',
+      'Sind alle Leben weg, ist das Spiel vorbei.',
     ],
-    score: 'Anzahl der erfolgreichen Checks und das höchste geschaffte Ziel.',
+    input: 'Gib pro Aufnahme die erzielten Punkte ein – der Rest wird automatisch berechnet. Über „Check“ trägst du den Checkout direkt ein.',
+    score: 'Gewertet wird das höchste geschaffte Ziel, außerdem die Anzahl der Checks.',
     tip: 'Typischer Weg für 121: T20 · 11 · Bull oder T17 · T10 · D20. Die App zeigt dir einen Vorschlag.',
+
   },
 };
 

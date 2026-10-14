@@ -1,6 +1,5 @@
 // Trainingsspiele: Around the Clock, Bob's 27, Power Scoring, Doppeltraining, Checkout 121.
 import { uid } from './store.js';
-import { canFinish } from './checkout.js';
 import { validTotal } from './x01.js';
 
 const ALL_DOUBLES = [...Array.from({ length: 20 }, (_, i) => i + 1), 25];
@@ -23,7 +22,8 @@ export function newTraining(type, config, players) {
     else st.targets = Array(config.rounds).fill(config.target);
     st.ps = players.map(() => ({ idx: 0, hits: 0, darts: 0, per: {}, done: false }));
   } else if (type === 'c121') {
-    st.ps = players.map(() => ({ target: 121, rem: 121, visit: 0, attempt: 0, success: 0, best: 0, darts: 0, done: false }));
+    const lives = config.lives || 3;
+    st.ps = players.map(() => ({ target: 121, rem: 121, visit: 0, checkpoint: 121, lives, success: 0, best: 0, darts: 0, done: false }));
   }
   return st;
 }
@@ -112,25 +112,39 @@ export function trainingInput(st, val) {
     }
     case 'c121': {
       if (!validTotal(val)) return false;
+      const maxDarts = st.config.darts || 9;
+      const cpLimit = st.config.checkpoint || 0;
       p.visit++;
       p.darts += 3;
+      const used = p.visit * 3;
       const after = p.rem - val;
-      let msg;
       if (after === 0) {
         p.success++;
         p.best = Math.max(p.best, p.target);
-        msg = `${name} checkt ${p.target}! ✔`;
-        p.target++;
-        nextAttempt(st, p);
+        let msg = `${name} checkt ${p.target} in ${used} Darts! ✔`;
+        if (cpLimit && used <= cpLimit) {
+          p.checkpoint = p.target;
+          msg += ` Checkpoint ${p.target}`;
+        }
         st.last = { text: msg, good: true };
+        p.target++;
+        nextTarget(p);
       } else {
-        if (after > 1) p.rem = after; // sonst Bust
-        if (p.visit >= 3) {
-          msg = `${name}: ${p.target} nicht gecheckt`;
-          if (st.config.onFail === 'reset') p.target = 121;
-          nextAttempt(st, p);
-        } else msg = `${name}: ${after < 0 || after === 1 ? 'Bust' : val}`;
-        st.last = { text: msg, good: false };
+        const bust = after < 0 || after === 1;
+        if (!bust) p.rem = after;
+        if (used >= maxDarts) {
+          p.lives--;
+          let msg = `${name}: ${p.target} nicht gecheckt – noch ${p.lives} Leben`;
+          if (st.config.onFail !== 'stay') {
+            p.target = p.checkpoint;
+            msg += ` · zurück auf ${p.checkpoint}`;
+          }
+          nextTarget(p);
+          if (p.lives <= 0) { p.done = true; msg = `${name}: keine Leben mehr – höchstes Ziel ${p.best || '–'}`; }
+          st.last = { text: msg, good: false };
+        } else {
+          st.last = { text: `${name}: ${bust ? 'Bust' : val} · noch ${maxDarts - used} Darts`, good: false };
+        }
       }
       advance(st);
       break;
@@ -139,15 +153,9 @@ export function trainingInput(st, val) {
   return true;
 }
 
-function nextAttempt(st, p) {
-  p.attempt++;
+function nextTarget(p) {
   p.visit = 0;
   p.rem = p.target;
-  if (p.attempt >= st.config.attempts) p.done = true;
-}
-
-export function c121CanFinish(rem) {
-  return canFinish(rem, 'double');
 }
 
 /** Ergebnis je Spieler: metric (Hauptwert), Ranking und Detailtext. */
@@ -159,7 +167,7 @@ export function trainingResults(st) {
       case 'bobs27': return { metric: p.score, better: 'high', unit: 'Punkte', detail: `${p.out ? 'ausgeschieden · ' : ''}${pct(p.hits, p.darts)} Doppelquote`, hits: p.hits, darts: p.darts };
       case 'power': return { metric: +(p.n ? p.total / p.n : 0).toFixed(1), better: 'high', unit: 'Ø', detail: `${p.total} Punkte · Höchste ${p.high}`, total: p.total };
       case 'doubles': return { metric: +(p.darts ? (p.hits / p.darts) * 100 : 0).toFixed(1), better: 'high', unit: '%', detail: `${p.hits}/${p.darts} Doppel getroffen`, hits: p.hits, darts: p.darts };
-      case 'c121': return { metric: p.success, better: 'high', unit: 'Checks', detail: `Höchstes Ziel ${p.best || '–'} · ${p.attempt} Versuche`, best: p.best };
+      case 'c121': return { metric: p.best, better: 'high', unit: 'Ziel', detail: `${p.success} Checks · ${p.darts} Darts · Checkpoint ${p.checkpoint}`, best: p.best, success: p.success };
     }
   });
   if (st.type === 'doubles' || st.type === 'bobs27') {
@@ -190,6 +198,9 @@ export function variantOf(type, c) {
       const m = c.mode === 'seq' ? 'D1 → Bull' : c.mode === 'random' ? `Zufällig (${c.rounds})` : `${dlabel(c.target)} (${c.rounds})`;
       return { key: `doubles-${c.mode}${c.mode === 'fixed' ? '-' + c.target : ''}`, label: `Doppeltraining · ${m}` };
     }
-    case 'c121': return { key: `c121-${c.attempts}`, label: `Checkout 121 · ${c.attempts} Versuche` };
+    case 'c121': return {
+      key: `c121-${c.darts}-${c.lives}-${c.checkpoint || 0}-${c.onFail}`,
+      label: `Checkout 121 · ${c.darts} Darts · ${c.lives} Leben${c.checkpoint ? ` · Checkpoint ≤ ${c.checkpoint}` : ''}`,
+    };
   }
 }

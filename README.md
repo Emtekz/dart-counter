@@ -22,7 +22,7 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
 - **Bob's 27** – D1 bis Bull, Start mit 27 Punkten
 - **Power Scoring** – möglichst viele Punkte in 5/10/20/33 Aufnahmen
 - **Doppeltraining** – D1 → Bull, zufällige Doppel oder ein Lieblingsdoppel
-- **Checkout 121** – 121 in 9 Darts checken, bei Erfolg steigt das Ziel
+- **Checkout 121** – ab 121 aufwärts checken, mit Darts pro Ziel (3–15), Checkpoints für schnelle Checks und 1–5 Leben
 
 ### Bedienung
 - Startseite als Spiel-Hub: X01 mit Schnellwahl (301/501/701 · Solo, Gegner, Dartbot, Doppel) und alle Trainingsspiele auf einen Blick

@@ -715,3 +715,8 @@ body.in-game { overflow: hidden; }
 .dbl-item.on { border-left-color: var(--gold); }
 .dbl-item b { font-family: var(--display); font-size: 1.5rem; font-weight: 900; font-style: italic; line-height: 1; }
 .dbl-item span { font-size: .78rem; color: var(--muted); }
+
+/* ---------- Checkout 121 ---------- */
+.c121-meta { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; font-family: var(--display); font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.c121-meta b { color: #fff; }
+.hearts { color: var(--red); letter-spacing: .12em; font-size: 1.2rem; }
