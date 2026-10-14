@@ -24,12 +24,24 @@ function load() {
 
 export const db = load();
 
-export function save() {
+let saveHook = null;
+
+/** Wird nach jedem save() aufgerufen (Cloud-Sync). */
+export function onSave(fn) {
+  saveHook = fn;
+}
+
+export function saveLocal() {
   try {
     localStorage.setItem(KEY, JSON.stringify(db));
   } catch (e) {
     console.error('Speichern fehlgeschlagen', e);
   }
+}
+
+export function save() {
+  saveLocal();
+  saveHook?.();
 }
 
 export function uid() {
@@ -61,8 +73,10 @@ export function exportData() {
 export function importData(json) {
   const d = JSON.parse(json);
   if (!Array.isArray(d.players) || !Array.isArray(d.games)) throw new Error('Ungültige Datei');
-  db.players = d.players;
-  db.games = d.games;
+  // Zusammenführen nach ID – importierte Einträge überschreiben gleiche IDs
+  const merge = (cur, inc) => [...new Map([...cur, ...inc].map(x => [x.id, x])).values()];
+  db.players = merge(db.players, d.players);
+  db.games = merge(db.games, d.games).sort((a, b) => a.date - b.date);
   if (d.settings) db.settings = { ...db.settings, ...d.settings };
   save();
 }

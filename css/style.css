@@ -623,3 +623,16 @@ body.in-game { overflow: hidden; }
   .slot { width: 38px; }
   .b-stats span:nth-child(2) { display: none; }
 }
+
+/* ---------- Sync ---------- */
+.block { display: block; }
+code { font-size: .85em; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+.sync-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: .75rem; font-weight: 700;
+  background: var(--surface-2); color: var(--muted);
+}
+.sync-pill.synced { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+.sync-pill.pending, .sync-pill.connecting { color: var(--amber); background: color-mix(in srgb, var(--amber) 14%, transparent); }
+.sync-pill.error { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }

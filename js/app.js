@@ -4,6 +4,7 @@ import { newTraining, trainingInput, trainingResults, variantOf, dlabel, pct } f
 import { checkoutRoute, minDarts, throwOf } from './checkout.js';
 import { chooseTarget, throwAt, BOT_LEVELS } from './bot.js';
 import { x01Agg, trainingAgg, gamesOf, trainingBoards } from './stats.js';
+import { sync, initSync, signIn, signOut, statusText } from './sync.js';
 
 /* ---------- Hilfsfunktionen ---------- */
 
@@ -36,6 +37,7 @@ const ICONS = {
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
   keypad: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>',
   dart: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>',
+  cloud: '<path d="M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z"/>',
 };
 const icon = (name, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
 
@@ -886,9 +888,10 @@ function viewSettings() {
     <div class="opt"><label>Sprachansage (Scores, Game Shot)</label>${seg('speech', [[false, 'Aus'], [true, 'An']])}</div>
     <div class="opt"><label>Design</label>${seg('theme', [['dark', 'Dunkel'], ['light', 'Hell']])}</div>
   </section>
+  ${syncCard()}
   <section class="card">
     <h3>Daten</h3>
-    <p class="muted small">Alle Daten liegen nur lokal in diesem Browser. Mit Export/Import kannst du sie sichern oder auf ein anderes Gerät übertragen.</p>
+    <p class="muted small">${sync.user ? 'Spieler und Spiele werden zusätzlich in deinem Cloud-Konto gespeichert.' : 'Alle Daten liegen lokal in diesem Browser.'} Mit dem Export sicherst du alles als Datei; beim Import werden die Daten mit den vorhandenen zusammengeführt.</p>
     <div class="row gap wrap">
       <button class="btn" data-action="export">Exportieren</button>
       <label class="btn">Importieren<input type="file" accept="application/json,.json" id="import-file" hidden></label>
@@ -896,6 +899,31 @@ function viewSettings() {
     </div>
   </section>
   <p class="muted small center">Dart Counter · ${db.players.length} Spieler · ${db.games.length} Spiele gespeichert</p>`;
+}
+
+function syncCard() {
+  let body;
+  if (!sync.configured) {
+    body = '<p class="muted small">Noch nicht eingerichtet. Sobald die Firebase-Konfiguration in <code>js/firebase-config.js</code> eingetragen ist, kannst du dich hier anmelden und Spieler &amp; Statistiken auf Handy, Tablet und Laptop teilen.</p>';
+  } else if (!sync.ready && sync.status !== 'error') {
+    body = '<p class="muted small">Lade …</p>';
+  } else if (!sync.user) {
+    body = `<p class="muted small">Melde dich auf allen Geräten mit demselben Google-Konto an – Spieler, Spiele und Statistiken werden dann automatisch abgeglichen. Vorhandene Daten auf diesem Gerät werden dabei übernommen.</p>
+      <button class="btn primary" data-action="sync-login">${icon('cloud')} Mit Google anmelden</button>`;
+  } else {
+    body = `<div class="row gap wrap"><span class="grow"><b>${esc(sync.user.name || sync.user.email)}</b><span class="muted small block">${esc(sync.user.email || '')}</span></span>
+      <button class="btn ghost" data-action="sync-logout">Abmelden</button></div>
+      <p class="muted small">Ein laufendes Spiel bleibt auf dem Gerät, auf dem es gespielt wird. Sobald es beendet ist, erscheint es überall.</p>`;
+  }
+  return `<section class="card"><div class="row between"><h3>Synchronisation</h3>${sync.configured ? syncPill() : ''}</div>${body}
+    ${sync.error ? `<p class="small bad">Fehler: ${esc(sync.error)}</p>` : ''}</section>`;
+}
+
+const syncPill = () => `<span class="sync-pill ${sync.status}" data-sync-status>${icon('cloud', 'xs')} ${statusText()}</span>`;
+
+function onSyncChange(dataChanged) {
+  if (dataChanged || route.name === 'settings') return render();
+  document.querySelectorAll('[data-sync-status]').forEach(el => (el.outerHTML = syncPill()));
 }
 
 /* ---------- Event-Handling ---------- */
@@ -1018,7 +1046,11 @@ const actions = {
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   },
-  reset: () => confirmBox('Alle Daten löschen?', 'Spieler, Spiele und Einstellungen werden unwiderruflich gelöscht.', 'Alles löschen', () => { resetAll(); go('#/'); }),
+  'sync-login': () => signIn(),
+  'sync-logout': () => confirmBox('Abmelden?', 'Die Daten bleiben auf diesem Gerät und in der Cloud erhalten, werden aber nicht mehr abgeglichen.', 'Abmelden', () => signOut(), false),
+  reset: () => confirmBox('Alle Daten löschen?', sync.user
+    ? 'Spieler, Spiele und Einstellungen werden unwiderruflich gelöscht – auch in der Cloud und damit auf allen Geräten.'
+    : 'Spieler, Spiele und Einstellungen werden unwiderruflich gelöscht.', 'Alles löschen', () => { resetAll(); go('#/'); }),
 };
 
 document.addEventListener('click', e => {
@@ -1087,3 +1119,4 @@ document.addEventListener('visibilitychange', () => {
 });
 
 render();
+initSync(onSyncChange);
