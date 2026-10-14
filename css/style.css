@@ -90,9 +90,31 @@ h4 { font-size: .95rem; margin-bottom: .6rem; }
 .page > *, .card { min-width: 0; }
 .page-head { display: flex; align-items: center; gap: .6rem; min-height: 44px; }
 .page-head h1 { font-size: 1.5rem; flex: 1; display: flex; align-items: center; gap: .6rem; }
-.brand-head { display: flex; align-items: center; gap: .8rem; }
-.logo { width: 46px; height: 46px; }
-.brand { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; }
+.brand-head { padding: 18px 0 6px; }
+.brand {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .28em;
+  font-size: clamp(2.7rem, 10vw, 4.6rem);
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: -.045em;
+  line-height: .92;
+}
+.brand .b1 { color: var(--text); }
+.brand .b2 {
+  background: linear-gradient(100deg, var(--accent-soft) 0%, var(--accent) 45%, var(--accent-2) 100%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 18px rgba(239, 35, 60, .35));
+  padding-right: .08em;
+}
+.brand-tag {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  margin-top: 12px;
+  font-size: .78rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted);
+}
+.brand-tag i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .section-title { margin-top: 10px; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent-soft); font-weight: 700; }
 .hint { margin: -4px 0 0; }

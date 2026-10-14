@@ -222,7 +222,8 @@ function viewHome() {
   const recent = db.games.slice(-5).reverse();
   return `
   <header class="brand-head">
-    <img src="icons/logo.png" alt="" class="logo"><div><div class="brand">Dart Counter</div><div class="muted small">Zählen. Trainieren. Besser werden.</div></div>
+    <h1 class="brand"><span class="b1">Dart</span><span class="b2">Counter</span></h1>
+    <div class="brand-tag"><span>Zählen</span><i></i><span>Trainieren</span><i></i><span>Besser werden</span></div>
   </header>
 
   ${cur ? `<section class="card resume">
