@@ -313,7 +313,7 @@ function partName(p) {
 function partColor(p, i) {
   if (p.kind === 'human') return getPlayer(p.playerId)?.color || COLORS[i % COLORS.length];
   if (p.kind === 'bot') return '#94a3b8';
-  return '#cbd5e1';
+  return COLORS[i % COLORS.length];
 }
 
 function viewSetup(type) {
