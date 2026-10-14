@@ -782,3 +782,29 @@ body.in-game { overflow: hidden; }
   .rc-discard { top: 8px; right: 8px; }
   .rc-go { flex: 1; }
 }
+
+/* ---------- X01-Block: Punkte im Titel, Modi als Leiste ---------- */
+.block-head .title-pick { display: flex; gap: 4px; margin-left: auto; }
+.title-pick button {
+  border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+  font-family: var(--display); font-weight: 900; font-style: italic; font-size: 1.2rem;
+  padding: 4px 14px; transform: skewX(-10deg); transition: background .12s, color .12s;
+}
+.title-pick button.on { background: linear-gradient(100deg, var(--red), var(--red-2)); border-color: var(--red); color: #fff; box-shadow: var(--accent-glow); }
+.title-pick + .info-btn { margin-left: 2px; }
+.mode-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); background: var(--panel); }
+.mode-seg {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 56px;
+  background: transparent; border: 0; border-left: 1px solid var(--line);
+  font-family: var(--display); font-weight: 800; font-size: 1.2rem; text-transform: uppercase;
+  transition: background .12s;
+}
+.mode-seg:first-child { border-left: 0; }
+.mode-seg .ico { color: var(--red); width: 22px; height: 22px; }
+.mode-seg:hover { background: var(--panel-2); }
+.mode-seg:active { background: var(--panel-3); }
+@media (max-width: 520px) {
+  .mode-seg { flex-direction: column; gap: 3px; height: 62px; font-size: 1rem; }
+  .title-pick button { padding: 3px 10px; font-size: 1.05rem; }
+  .block-head h2 { font-size: 1.8rem; }
+}

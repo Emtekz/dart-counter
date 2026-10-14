@@ -262,12 +262,13 @@ function viewHome() {
   ${favoritesBlock()}
 
   <section class="block">
-    <div class="block-head"><h2>X01 <em>Match</em></h2>${infoBtn('x01')}</div>
-    <div class="score-pick" role="group" aria-label="Startpunkte">${[301, 501, 701].map(v =>
-      `<button class="${start === v ? 'on' : ''}" data-action="home-start" data-v="${v}">${v}</button>`).join('')}</div>
-    <div class="mode-grid">${X01_MODES.map(([k, ic, label, sub]) => `
-      <button class="mode-tile" data-action="setup" data-type="x01" data-preset="${k}">
-        ${icon(ic)}<b>${label}</b><span>${typeof sub === 'function' ? sub() : sub}</span></button>`).join('')}
+    <div class="block-head"><h2>X01 <em>Match</em></h2>
+      <div class="title-pick" role="group" aria-label="Startpunkte">${[301, 501, 701].map(v =>
+        `<button class="${start === v ? 'on' : ''}" data-action="home-start" data-v="${v}" aria-pressed="${start === v}">${v}</button>`).join('')}</div>
+      ${infoBtn('x01')}</div>
+    <div class="mode-bar">${X01_MODES.map(([k, ic, label, sub]) => `
+      <button class="mode-seg" data-action="setup" data-type="x01" data-preset="${k}" title="${label} – ${typeof sub === 'function' ? sub() : sub}">
+        ${icon(ic)}<span>${label}</span></button>`).join('')}
     </div>
   </section>
 
