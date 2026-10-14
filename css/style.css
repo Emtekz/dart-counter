@@ -823,3 +823,7 @@ section.block { gap: 14px; }
 .fav-free b { font-family: var(--display); font-size: 1.2rem; font-weight: 800; font-style: italic; text-transform: uppercase; color: #6f5f65; }
 .fav-free span { font-size: .75rem; }
 @media (max-width: 700px) { .fav-free { min-height: 0; flex-direction: row; align-items: baseline; gap: 10px; } }
+
+/* Seiten-Scrollbar ausblenden (Scrollen bleibt möglich) – verhindert Layout-Sprünge */
+html { scrollbar-width: none; -ms-overflow-style: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
