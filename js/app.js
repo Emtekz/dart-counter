@@ -181,7 +181,6 @@ function confirmBox(title, text, okLabel, onOk, danger = true) {
 
 function render() {
   const r = route.name;
-  applyTheme();
   if (r !== 'game') stopBot();
   resetCharts();
   let html;
@@ -202,15 +201,6 @@ function render() {
   if (r === 'bulloff') scheduleBullBot();
   document.body.classList.toggle('in-game', inGame);
   if (inGame) { scheduleBot(); keepAwake(); } else releaseAwake();
-}
-
-const THEMES = { red: '#0b0809', bordeaux: '#0a0709' };
-function applyTheme() {
-  if (!THEMES[db.settings.theme]) db.settings.theme = 'red';
-  const t = db.settings.theme;
-  if (t === 'red') delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = t;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEMES[t]);
 }
 
 function nav(r) {
@@ -1123,7 +1113,7 @@ const RANGES = [['30', '30 Tage'], ['90', '90 Tage'], ['365', '1 Jahr'], ['all',
 
 // Per Validator geprüft (Kontrast, Farbfehlsichtigkeit) gegen die Kartenflächen beider Designs
 const CHART_COLORS = {
-  dark: { avg: '#ef233c', f9: '#3987e5', ramp: ['#a3263a', '#dc2a44', '#ff7a88'] },
+  dark: { avg: '#e8557a', f9: '#3987e5', ramp: ['#9b2346', '#d81b4a', '#f07a9a'] },
   light: { avg: '#dc1f36', f9: '#2a78d6', ramp: ['#ec7d8a', '#d63046', '#8f0d20'] },
 };
 const pal = () => CHART_COLORS.dark;
@@ -1273,7 +1263,6 @@ function viewSettings() {
   <section class="card">
     <div class="opt"><label>X01-Eingabe</label>${seg('inputMode', [['total', 'Gesamtpunkte'], ['darts', 'Einzeldarts']])}
       <p class="muted small">Auch im Spiel über das Symbol oben rechts umschaltbar.</p></div>
-    <div class="opt"><label>Farbe</label>${seg('theme', [['red', 'Rot'], ['bordeaux', 'Bordeaux / Purpur']])}</div>
   </section>
   ${syncCard()}
   <section class="card">

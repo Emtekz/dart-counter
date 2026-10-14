@@ -1,25 +1,25 @@
 /* =========================================================
-   Dart Counter – „Broadcast“-Design
+   Dart Counter – „Broadcast“-Design in Bordeaux / Purpur
    Angelehnt an TV-Grafiken großer Dart-Turniere: kräftige,
    schräge Condensed-Schrift, rote Streifen, Scoreboard-Balken.
    ========================================================= */
 
 :root {
-  --bg: #0b0809;
-  --panel: #151012;
-  --panel-2: #1d1517;
-  --panel-3: #281c1f;
-  --line: #33242a;
+  --bg: #0a0709;
+  --panel: #140e13;
+  --panel-2: #1c141b;
+  --panel-3: #271c26;
+  --line: #33242f;
   --text: #ffffff;
-  --muted: #a39197;
-  --red: #ff1f3d;
-  --red-2: #c4001f;
-  --red-deep: #8d0718;
+  --muted: #a3929f;
+  --red: #d81b4a;
+  --red-2: #5e1e8c;
+  --red-deep: #4a1466;
   --gold: #ffc23d;
   --good: #22c55e;
   --amber: #f59e0b;
   --danger: #ff4053;
-  --double: #e3122f;
+  --double: #c8174a;
   --triple: #16a34a;
 
   /* Aliase für bestehende Komponenten (Diagramme etc.) */
@@ -29,7 +29,7 @@
   --border: var(--line);
   --accent: var(--red);
   --accent-2: var(--red-2);
-  --accent-soft: #ff4d63;
+  --accent-soft: #e8557a;
   --accent-ink: #ffffff;
   --accent-glow: 0 8px 26px color-mix(in srgb, var(--red) 35%, transparent);
   --shadow: 0 14px 40px rgba(0, 0, 0, .55);
@@ -40,20 +40,6 @@
   --nav-h: 64px;
   --angle: 14px;
   color-scheme: dark;
-}
-
-/* Farbthema „Bordeaux / Purpur“ (umschaltbar unter Optionen) */
-[data-theme="bordeaux"] {
-  --red: #d81b4a;
-  --red-2: #5e1e8c;
-  --red-deep: #4a1466;
-  --accent-soft: #e8557a;
-  --bg: #0a0709;
-  --panel: #140e13;
-  --panel-2: #1c141b;
-  --panel-3: #271c26;
-  --line: #33242f;
-  --muted: #a3929f;
 }
 
 * { box-sizing: border-box; }

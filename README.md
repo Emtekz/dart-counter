@@ -39,7 +39,7 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
 - Synchronisation zwischen Geräten per Google-Anmeldung (Firebase)
 - Spielhistorie mit Detailansicht und Revanche
 - Rückgängig-Funktion, Spiel pausieren und später fortsetzen
-- „Broadcast“-Design im Stil von TV-Dartgrafiken (Schrift Barlow Condensed, lokal eingebunden), Farbe Rot oder Bordeaux/Purpur
+- „Broadcast“-Design im Stil von TV-Dartgrafiken (Schrift Barlow Condensed, lokal eingebunden) in Bordeaux/Purpur
 - Daten-Export/Import (JSON) – alle Daten bleiben lokal im Browser (localStorage)
 
 ## Tastatur (am PC)

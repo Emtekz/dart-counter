@@ -6,7 +6,7 @@ const DEFAULTS = () => ({
   players: [],
   games: [],
   current: null,
-  settings: { inputMode: 'total', theme: 'red', lastSetup: {} },
+  settings: { inputMode: 'total', lastSetup: {} },
 });
 
 export const COLORS = ['#ef233c', '#3b82f6', '#f59e0b', '#22c55e', '#a855f7', '#eab308', '#14b8a6', '#ec4899', '#64748b', '#84cc16'];
