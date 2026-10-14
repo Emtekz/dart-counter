@@ -827,3 +827,10 @@ section.block { gap: 14px; }
 /* Seiten-Scrollbar ausblenden (Scrollen bleibt möglich) – verhindert Layout-Sprünge */
 html { scrollbar-width: none; -ms-overflow-style: none; }
 html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+@media (max-width: 520px) {
+  .title-pick { gap: 3px; }
+  .title-pick button { padding: 3px 7px; font-size: .98rem; }
+}
+@media (max-width: 380px) {
+  .block-head h2 em { display: none; }
+}

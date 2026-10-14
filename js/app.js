@@ -263,7 +263,7 @@ function viewHome() {
 
   <section class="block">
     <div class="block-head"><h2>X01 <em>Match</em></h2>
-      <div class="title-pick" role="group" aria-label="Startpunkte">${[301, 501, 701].map(v =>
+      <div class="title-pick" role="group" aria-label="Startpunkte">${[101, 301, 501, 701, 901].map(v =>
         `<button class="${start === v ? 'on' : ''}" data-action="home-start" data-v="${v}" aria-pressed="${start === v}">${v}</button>`).join('')}</div>
       ${infoBtn('x01')}</div>
     <div class="mode-bar">${X01_MODES.map(([k, ic, label, sub]) => `
