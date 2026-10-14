@@ -6,6 +6,7 @@ import { chooseTarget, throwAt, BOT_LEVELS } from './bot.js';
 import { x01Agg, trainingAgg, gamesOf, trainingBoards, rangeStart, x01Matches, trainingHistory, bucketUnit, bucketRange, groupBy } from './stats.js';
 import { lineChart, barChart, resetCharts, chartWidth } from './charts.js';
 import { sync, initSync, signIn, signOut, statusText } from './sync.js';
+import { rulesHtml } from './rules.js';
 
 /* ---------- Hilfsfunktionen ---------- */
 
@@ -38,6 +39,8 @@ const ICONS = {
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
   keypad: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>',
   dart: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/>',
+  team: '<circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M2.5 18c.5-2.7 2.2-4.2 4.5-4.2s4 1.5 4.5 4.2M12.5 18c.5-2.7 2.2-4.2 4.5-4.2s4 1.5 4.5 4.2"/>',
   cloud: '<path d="M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z"/>',
 };
 const icon = (name, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
@@ -150,7 +153,7 @@ function renderModal() {
   const m = ui.modal;
   if (!m) { root.innerHTML = ''; return; }
   root.innerHTML = `<div class="modal-back" data-action="modal-close">
-    <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal ${m.sheet ? 'sheet' : ''}" role="dialog" aria-modal="true">
       <h3>${esc(m.title)}</h3>
       ${m.html ? m.html : m.text ? `<p class="muted">${esc(m.text)}</p>` : ''}
       <div class="modal-btns ${m.grid ? 'grid' : ''}">${m.buttons.map((b, i) => `<button class="btn ${b.cls || ''}" data-action="modal-btn" data-i="${i}">${esc(b.label)}</button>`).join('')}</div>
@@ -186,7 +189,7 @@ function render() {
   resetCharts();
   let html;
   switch (r) {
-    case 'play': html = route.arg && GAMES[route.arg] ? viewSetup(route.arg) : viewPlay(); break;
+    case 'play': html = route.arg && GAMES[route.arg] ? viewSetup(route.arg) : (go('#/'), ''); break;
     case 'game': html = db.current ? viewGame() : (go('#/'), ''); break;
     case 'result': html = viewResult(route.arg); break;
     case 'players': html = viewPlayers(); break;
@@ -196,7 +199,7 @@ function render() {
     default: html = viewHome();
   }
   const inGame = r === 'game';
-  app.innerHTML = inGame ? html : `<main class="page">${html}</main>${nav(r)}`;
+  app.innerHTML = inGame ? html : `<main class="page ${r === 'play' ? 'with-cta' : ''}">${html}</main>${r === 'play' ? '' : nav(r)}`;
   document.body.classList.toggle('in-game', inGame);
   if (inGame) { scheduleBot(); keepAwake(); } else releaseAwake();
 }
@@ -205,8 +208,7 @@ function nav(r) {
   const item = (hash, name, ic, label) =>
     `<a href="${hash}" class="nav-item ${r === name || (name === 'players' && r === 'player') ? 'active' : ''}">${icon(ic)}<span>${label}</span></a>`;
   return `<nav class="nav">
-    ${item('#/', 'home', 'home', 'Start')}
-    ${item('#/play', 'play', 'target', 'Spielen')}
+    ${item('#/', 'home', 'target', 'Spielen')}
     ${item('#/players', 'players', 'users', 'Spieler')}
     ${item('#/stats', 'stats', 'chart', 'Statistik')}
     ${item('#/settings', 'settings', 'settings', 'Optionen')}
@@ -219,11 +221,20 @@ const pageHead = (title, back, extra = '') => `<header class="page-head">
 
 const dot = color => `<span class="dot" style="--c:${color}"></span>`;
 
-/* ---------- Start ---------- */
+/* ---------- Start (Spiel-Hub) ---------- */
+
+const X01_MODES = [
+  ['solo', 'user', 'Solo', 'allein üben'],
+  ['versus', 'users', 'Gegner', 'mit Freunden'],
+  ['bot', 'bot', 'Dartbot', () => `Stufe ${db.settings.lastBot || 5}`],
+  ['doubles', 'team', 'Doppel', 'Team gegen Team'],
+];
 
 function viewHome() {
   const cur = db.current?.state;
-  const recent = db.games.slice(-5).reverse();
+  const recent = db.games.slice(-3).reverse();
+  const start = homeStart();
+  const trainings = Object.entries(GAMES).filter(([, g]) => g.cat === 'training');
   return `
   <header class="brand-head">
     <h1 class="brand"><span class="b1">Dart</span><span class="b2">Counter</span></h1>
@@ -231,38 +242,52 @@ function viewHome() {
   </header>
 
   ${cur ? `<section class="card resume">
-      <div><div class="eyebrow">Laufendes Spiel</div><div class="resume-title">${esc(gameTitle(cur))}</div>
+      <span class="resume-icon">${icon('play')}</span>
+      <div class="grow"><div class="eyebrow">Laufendes Spiel</div><div class="resume-title">${esc(gameTitle(cur))}</div>
       <div class="muted small">${esc(cur.players.map(p => p.name).join(' · '))}</div></div>
-      <div class="row gap"><button class="btn ghost" data-action="discard-current">Verwerfen</button><a class="btn primary" href="#/game">${icon('play')} Weiter</a></div>
+      <div class="row gap"><button class="btn ghost sm" data-action="discard-current">Verwerfen</button><a class="btn primary" href="#/game">Weiter</a></div>
     </section>` : ''}
 
-  <section class="hero card">
+  <section class="card x01-card">
     <img src="icons/icon-512.png" alt="" class="hero-board">
-    <div>
-      <h2>Bereit für den nächsten Wurf?</h2>
-      <p class="muted">X01-Matches allein, mit Freunden, im Doppel oder gegen den Dartbot – plus Trainingsspiele mit Statistiken für jeden Spieler.</p>
+    <div class="x01-head">
+      <div><div class="eyebrow">Match</div><h2>X01</h2><p class="muted small">Von ${start} genau auf 0 – der Dart-Klassiker.</p></div>
+      ${infoBtn('x01')}
     </div>
-    <a href="#/play" class="btn primary big">${icon('target')} Neues Spiel</a>
+    <div class="seg start-seg" role="group" aria-label="Startpunkte">${[301, 501, 701].map(v =>
+      `<button class="${start === v ? 'on' : ''}" data-action="home-start" data-v="${v}">${v}</button>`).join('')}</div>
+    <div class="mode-grid">${X01_MODES.map(([k, ic, label, sub]) => `
+      <button class="mode-btn" data-action="setup" data-type="x01" data-preset="${k}">
+        ${icon(ic)}<b>${label}</b><span>${typeof sub === 'function' ? sub() : sub}</span></button>`).join('')}
+    </div>
   </section>
 
-  <h3 class="section-title">Schnellstart</h3>
-  <div class="tiles">
-    <button class="tile" data-action="quick" data-q="solo"><span class="tile-art">501</span><b>501 Solo</b><span class="muted small">Freies Training</span></button>
-    <button class="tile" data-action="quick" data-q="bot"><span class="tile-art">${icon('bot')}</span><b>501 vs. Bot</b><span class="muted small">Stufe ${db.settings.lastBot || 5}</span></button>
-    <a class="tile" href="#/play/atc"><span class="tile-art">1→20</span><b>Around the Clock</b><span class="muted small">Training</span></a>
-    <a class="tile" href="#/play/doubles"><span class="tile-art">D16</span><b>Doppeltraining</b><span class="muted small">Training</span></a>
+  <h3 class="section-title">Training</h3>
+  <div class="train-grid">${trainings.map(([k, g]) => `
+    <div class="train-card">
+      <button class="train-main" data-action="setup" data-type="${k}">
+        <span class="game-art">${GAME_ART[k]}</span>
+        <span class="tc-text"><b>${g.name}</b><span class="muted small">${g.desc}</span></span>
+      </button>
+      ${infoBtn(k)}
+    </div>`).join('')}
   </div>
 
-  <h3 class="section-title">Spieler</h3>
-  ${db.players.length ? `<div class="chips">${db.players.map(p => {
-    const a = x01Agg(p.id);
-    return `<a class="chip big" href="#/player/${p.id}">${dot(p.color)}<b>${esc(p.name)}</b><span class="muted">Ø ${a.darts ? f1(a.avg) : '–'}</span></a>`;
-  }).join('')}<a class="chip big add" href="#/players">${icon('plus')} Spieler</a></div>`
-    : `<a class="card empty-cta" href="#/players">${icon('user')}<div><b>Lege Spielerprofile an</b><div class="muted small">So werden Averages, Checkout-Quoten und Trainingsbestwerte für jeden Spieler gespeichert.</div></div></a>`}
+  ${!db.players.length ? `<a class="card empty-cta" href="#/players">${icon('user')}<div><b>Lege Spielerprofile an</b>
+    <div class="muted small">Dann werden Averages, Checkout-Quoten und Trainingsbestwerte für jeden Spieler gespeichert.</div></div></a>` : ''}
 
-  <h3 class="section-title">Letzte Spiele</h3>
-  ${recent.length ? `<div class="list">${recent.map(gameRow).join('')}</div>` : '<p class="muted">Noch keine Spiele gespielt.</p>'}
-  `;
+  ${recent.length ? `<div class="section-row"><h3 class="section-title">Zuletzt gespielt</h3><a class="text-link" href="#/stats">Alle Spiele</a></div>
+    <div class="list">${recent.map(gameRow).join('')}</div>` : ''}`;
+}
+
+const infoBtn = type => `<button class="icon-btn info-btn" data-action="rules" data-type="${type}" aria-label="So funktioniert ${esc(GAMES[type].name)}" title="Regeln & Erklärung">${icon('info')}</button>`;
+
+function homeStart() {
+  return ui.homeStart || db.settings.lastSetup?.x01?.opts?.start || 501;
+}
+
+function showRules(type) {
+  openModal({ title: `So funktioniert ${GAMES[type].name}`, html: rulesHtml(type), sheet: true, buttons: [{ label: 'Verstanden', cls: 'primary' }] });
 }
 
 function gameRow(g) {
@@ -276,28 +301,16 @@ function gameRow(g) {
 }
 
 function gameTitle(st) {
-  if (st.type === 'x01') {
-    const c = st.config;
-    const out = { double: 'Double Out', single: 'Single Out', master: 'Master Out' }[c.out];
-    return `${c.start} · ${c.in === 'double' ? 'Double In · ' : ''}${out} · First to ${c.format === 'sets' ? `${c.sets} Sets` : `${c.legs} Leg${c.legs > 1 ? 's' : ''}`}`;
-  }
+  if (st.type === 'x01') return x01Summary(st.config);
   return variantOf(st.type, st.config).label;
 }
 
-/* ---------- Spielauswahl & Setup ---------- */
-
-function viewPlay() {
-  const card = ([k, g]) => `<a class="game-card ${g.cat}" href="#/play/${k}">
-    <span class="game-art">${GAME_ART[k]}</span>
-    <span><b>${g.name}</b><span class="muted small">${g.desc}</span></span></a>`;
-  const entries = Object.entries(GAMES);
-  return `${pageHead('Neues Spiel')}
-    <h3 class="section-title">Match</h3>
-    <div class="game-grid">${entries.filter(([, g]) => g.cat === 'match').map(card).join('')}</div>
-    <p class="muted small hint">Solo, gegeneinander, im Doppel (2 vs 2) oder gegen den Dartbot.</p>
-    <h3 class="section-title">Training</h3>
-    <div class="game-grid">${entries.filter(([, g]) => g.cat === 'training').map(card).join('')}</div>`;
+function x01Summary(c) {
+  const out = { double: 'Double Out', single: 'Single Out', master: 'Master Out' }[c.out];
+  return `${c.start} · ${c.in === 'double' ? 'Double In · ' : ''}${out} · First to ${c.format === 'sets' ? `${c.sets} Sets` : `${c.legs} Leg${c.legs > 1 ? 's' : ''}`}`;
 }
+
+/* ---------- Spiel einrichten ---------- */
 
 function initSetup(type) {
   const def = GAMES[type];
@@ -307,6 +320,21 @@ function initSetup(type) {
     .filter(p => def.bots || p.kind !== 'bot');
   if (!parts.length && db.players[0]) parts.push(partFromPlayer(db.players[0]));
   ui.setup = { type, opts: { ...def.defaults, ...(last?.opts || {}) }, parts, teams: !!(last?.teams && def.teams) };
+  ui.optsOpen = false;
+}
+
+/** Voreinstellungen aus den Schnellwahl-Knöpfen der Startseite. */
+function applyPreset(preset) {
+  const s = ui.setup;
+  s.opts.start = homeStart();
+  const people = s.parts.filter(p => p.kind !== 'bot');
+  const first = people[0] || (db.players[0] ? partFromPlayer(db.players[0]) : { kind: 'guest', name: 'Spieler 1' });
+  const lvl = db.settings.lastBot || 5;
+  if (preset === 'solo') { s.parts = [first]; s.teams = false; }
+  if (preset === 'versus') { s.parts = people.length ? people : [first]; s.teams = false; }
+  if (preset === 'bot') { s.parts = [first, { kind: 'bot', name: `Dartbot ${lvl}`, level: lvl }]; s.teams = false; }
+  if (preset === 'doubles') { s.teams = true; }
+  s.parts.forEach((p, i) => (p.team = i % 2));
 }
 
 const partFromPlayer = p => ({ kind: 'human', playerId: p.id, name: p.name, team: 0 });
@@ -324,53 +352,62 @@ function partColor(p, i) {
 function viewSetup(type) {
   if (!ui.setup || ui.setup.type !== type) initSetup(type);
   const s = ui.setup, def = GAMES[type];
+  const many = def.options.length > 2;
+  const showOpts = !many || ui.optsOpen;
   const opts = def.options.filter(o => !o.show || o.show(s.opts)).map(o => `
     <div class="opt"><label>${typeof o.label === 'function' ? o.label(s.opts) : o.label}</label>
     <div class="seg ${o.choices.length > 6 ? 'wrap' : ''}">${o.choices.map(([v, l]) =>
       `<button class="${s.opts[o.key] === v ? 'on' : ''}" data-action="opt" data-key="${o.key}" data-value="${J(v)}">${l}</button>`).join('')}</div></div>`).join('');
 
-  const unused = db.players.filter(p => !s.parts.some(x => x.playerId === p.id));
-  const partsHtml = s.parts.map((p, i) => `
-    <div class="part">
-      ${dot(partColor(p, i))}
-      <span class="grow"><b>${esc(partName(p))}</b> <span class="muted small">${p.kind === 'bot' ? `Dartbot · ~Ø ${BOT_LEVELS[p.level - 1].avg}` : p.kind === 'guest' ? 'Gast (ohne Statistik)' : 'Profil'}</span></span>
-      ${s.teams ? `<button class="team-tag t${p.team}" data-action="part-team" data-i="${i}">Team ${p.team + 1}</button>` : ''}
-      ${i > 0 ? `<button class="icon-btn sm" data-action="part-up" data-i="${i}" aria-label="Nach oben">${icon('up')}</button>` : ''}
-      <button class="icon-btn sm" data-action="part-del" data-i="${i}" aria-label="Entfernen">${icon('x')}</button>
-    </div>`).join('');
+  // Spieler-Auswahl: Profile antippen (Reihenfolge = Wurfreihenfolge), Gäste/Bots mit ✕ entfernen
+  const order = new Map(s.parts.map((p, i) => [p.kind === 'human' ? 'h:' + p.playerId : 'x:' + i, i]));
+  const profileChips = db.players.map(p => {
+    const i = order.get('h:' + p.id);
+    return i == null
+      ? `<button class="pchip" data-action="toggle-player" data-id="${p.id}" style="--c:${p.color}">${dot(p.color)}${esc(p.name)}</button>`
+      : `<button class="pchip on" data-action="toggle-player" data-id="${p.id}" style="--c:${p.color}" aria-pressed="true"><span class="num">${i + 1}</span>${esc(p.name)}</button>`;
+  }).join('');
+  const extraChips = s.parts.map((p, i) => (p.kind === 'human' ? '' : `
+    <button class="pchip on" data-action="part-del" data-i="${i}" style="--c:${partColor(p, i)}" aria-label="${esc(partName(p))} entfernen">
+      <span class="num">${i + 1}</span>${p.kind === 'bot' ? icon('bot', 'xs') + ' ' : ''}${esc(partName(p))}${icon('x', 'xs')}</button>`)).join('');
+
+  const teamBox = t => `<div class="team-box t${t}"><div class="team-title">Team ${t + 1}</div>
+    ${s.parts.map((p, i) => (p.team === t ? `<button class="team-member" data-action="part-team" data-i="${i}">${dot(partColor(p, i))}${esc(partName(p))}<span class="muted">⇄</span></button>` : '')).join('') || '<span class="muted small">leer</span>'}</div>`;
 
   const err = setupError();
-  return `${pageHead(def.name, '#/play')}
-  <section class="card"><h3>Einstellungen</h3>${opts}</section>
+  const startLabel = type === 'x01' ? `${s.opts.start} starten` : `${def.name} starten`;
+  return `${pageHead(def.name, '#/', `<button class="btn ghost sm" data-action="rules" data-type="${type}">${icon('info')} Regeln</button>`)}
 
   <section class="card">
-    <div class="row between"><h3>Teilnehmer</h3>${s.parts.length > 1 ? `<button class="btn ghost sm" data-action="shuffle">${icon('shuffle')} Mischen</button>` : ''}</div>
-    ${def.teams ? `<div class="seg full"><button class="${!s.teams ? 'on' : ''}" data-action="teams" data-value="false">Jeder gegen jeden</button><button class="${s.teams ? 'on' : ''}" data-action="teams" data-value="true">Doppel (Teams)</button></div>` : ''}
-    <div class="parts">${partsHtml || '<p class="muted">Noch niemand dabei.</p>'}</div>
-    ${s.teams ? '<p class="muted small">Im Doppel spielen die Teams abwechselnd, innerhalb eines Teams wechseln sich die Spieler ab (A1 → B1 → A2 → B2).</p>' : ''}
-
-    <div class="add-block">
-      ${unused.length ? `<div class="label">Profile</div><div class="chips">${unused.map(p => `<button class="chip" data-action="add-profile" data-id="${p.id}">${dot(p.color)}${esc(p.name)} ${icon('plus', 'xs')}</button>`).join('')}</div>` : ''}
-      <div class="label">Gast oder neues Profil</div>
-      <div class="row gap"><input id="guest-name" class="input grow" placeholder="Name" maxlength="20" autocomplete="off">
-        <button class="btn" data-action="add-guest">Gast</button><button class="btn" data-action="add-new-profile">Profil</button></div>
-      ${def.bots ? `<div class="label">Dartbot</div>
-      <div class="row gap"><select id="bot-level" class="input grow">${BOT_LEVELS.map((b, i) => `<option value="${i + 1}" ${(db.settings.lastBot || 5) === i + 1 ? 'selected' : ''}>Stufe ${i + 1} · ~Ø ${b.avg}</option>`).join('')}</select>
-        <button class="btn" data-action="add-bot">${icon('bot')} Bot</button></div>` : ''}
+    <div class="row between"><h3>Wer spielt?</h3>${s.parts.length > 1 ? `<button class="btn ghost sm" data-action="shuffle">${icon('shuffle')} Mischen</button>` : ''}</div>
+    <p class="muted small">${db.players.length ? 'Tippe die Spieler in der Wurfreihenfolge an.' : 'Füge Gäste hinzu oder lege ein Profil an, um Statistiken zu speichern.'}</p>
+    <div class="pick">${profileChips}${extraChips}</div>
+    <div class="add-row">
+      <button class="chip add" data-action="dlg-guest">${icon('plus', 'xs')} Gast</button>
+      <button class="chip add" data-action="dlg-profile">${icon('plus', 'xs')} Neues Profil</button>
+      ${def.bots ? `<button class="chip add" data-action="dlg-bot">${icon('plus', 'xs')} Dartbot</button>` : ''}
     </div>
+    ${def.teams && s.parts.length > 1 ? `<div class="seg full"><button class="${!s.teams ? 'on' : ''}" data-action="teams" data-value="false">Jeder gegen jeden</button><button class="${s.teams ? 'on' : ''}" data-action="teams" data-value="true">Doppel (Teams)</button></div>` : ''}
+    ${s.teams ? `<div class="teams">${teamBox(0)}${teamBox(1)}</div><p class="muted small">Antippen wechselt das Team. Geworfen wird abwechselnd: A1 → B1 → A2 → B2.</p>` : ''}
   </section>
 
-  <div class="sticky-cta">
-    ${err ? `<div class="muted small center">${err}</div>` : ''}
-    <button class="btn primary big full" data-action="start" ${err ? 'disabled' : ''}>${icon('play')} Spiel starten</button>
+  <section class="card">
+    <div class="row between"><h3>Einstellungen</h3>${many ? `<button class="btn ghost sm" data-action="toggle-opts">${ui.optsOpen ? 'Fertig' : `${icon('edit')} Anpassen`}</button>` : ''}</div>
+    ${showOpts ? opts : `<button class="opt-summary" data-action="toggle-opts">${esc(type === 'x01' ? x01Summary(s.opts) : variantOf(type, s.opts).label)}</button>`}
+  </section>
+
+  <div class="setup-cta">
+    ${err ? `<div class="cta-hint">${err}</div>` : ''}
+    <button class="btn primary big full" data-action="start" ${err ? 'disabled' : ''}>${icon('play')} ${startLabel}</button>
   </div>`;
 }
 
 function setupError() {
   const s = ui.setup;
-  if (!s.parts.length) return 'Füge mindestens einen Teilnehmer hinzu.';
+  if (!s.parts.length) return 'Wähle mindestens einen Spieler aus.';
   if (s.parts.length > 8) return 'Maximal 8 Teilnehmer.';
-  if (!GAMES[s.type].bots && s.parts.some(p => p.kind === 'bot')) return 'Bots gibt es nur im X01.';
+  if (!GAMES[s.type].bots && s.parts.some(p => p.kind === 'bot')) return 'Den Dartbot gibt es nur im X01.';
+  if (s.parts.every(p => p.kind === 'bot')) return 'Mindestens ein Mensch muss mitspielen.';
   if (s.teams) {
     const a = s.parts.filter(p => p.team === 0).length, b = s.parts.length - a;
     if (!a || !b) return 'Beide Teams brauchen mindestens einen Spieler.';
@@ -414,6 +451,7 @@ const gameBar = (title, sub) => `<div class="game-bar">
   <button class="icon-btn" data-action="quit" aria-label="Spiel verlassen">${icon('x')}</button>
   <div class="game-title"><b>${esc(title)}</b>${sub ? `<span class="muted small">${sub}</span>` : ''}</div>
   ${db.current.state.type === 'x01' ? `<button class="icon-btn" data-action="toggle-input" title="Eingabeart wechseln" aria-label="Eingabeart wechseln">${icon(db.settings.inputMode === 'total' ? 'dart' : 'keypad')}</button>` : ''}
+  <button class="icon-btn" data-action="rules" data-type="${db.current.state.type}" aria-label="Regeln" title="Regeln">${icon('info')}</button>
   <button class="icon-btn" data-action="undo" aria-label="Rückgängig">${icon('undo')}</button>
 </div>`;
 
@@ -1035,54 +1073,75 @@ const actions = {
   'modal-close': (d, el, e) => { if (e.target === el) closeModal(); },
   'modal-btn': d => pressModal(+d.i),
   'discard-current': () => confirmBox('Spiel verwerfen?', 'Das laufende Spiel wird ohne Wertung beendet.', 'Verwerfen', () => { db.current = null; save(); render(); }),
-  quick: d => {
-    const me = db.players[0];
-    const parts = me ? [partFromPlayer(me)] : [{ kind: 'guest', name: 'Spieler 1', team: 0 }];
-    if (d.q === 'bot') {
-      const lvl = db.settings.lastBot || 5;
-      parts.push({ kind: 'bot', name: `Dartbot ${lvl}`, level: lvl, team: 1 });
-    }
-    ui.setup = { type: 'x01', opts: { ...GAMES.x01.defaults, ...(db.settings.lastSetup?.x01?.opts || {}), start: 501 }, parts, teams: false };
-    startFromSetup();
+  setup: d => {
+    initSetup(d.type);
+    if (d.preset) applyPreset(d.preset);
+    go('#/play/' + d.type);
   },
+  'home-start': d => { ui.homeStart = +d.v; render(); },
+  rules: d => showRules(d.type),
   opt: d => { ui.setup.opts[d.key] = JSON.parse(d.value); render(); },
+  'toggle-opts': () => { ui.optsOpen = !ui.optsOpen; render(); },
   teams: d => {
     ui.setup.teams = JSON.parse(d.value);
     ui.setup.parts.forEach((p, i) => (p.team = i % 2));
     render();
   },
   'part-team': d => { const p = ui.setup.parts[+d.i]; p.team = 1 - p.team; render(); },
-  'part-up': d => { const a = ui.setup.parts, i = +d.i; [a[i - 1], a[i]] = [a[i], a[i - 1]]; render(); },
   'part-del': d => { ui.setup.parts.splice(+d.i, 1); render(); },
   shuffle: () => {
     const a = ui.setup.parts;
     for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
     render();
   },
-  'add-profile': d => { const p = getPlayer(d.id); ui.setup.parts.push({ ...partFromPlayer(p), team: ui.setup.parts.length % 2 }); render(); },
-  'add-guest': () => {
-    const el = document.getElementById('guest-name');
-    const name = el.value.trim() || `Gast ${ui.setup.parts.filter(p => p.kind === 'guest').length + 1}`;
-    ui.setup.parts.push({ kind: 'guest', name, team: ui.setup.parts.length % 2 });
+  'toggle-player': d => {
+    const a = ui.setup.parts;
+    const i = a.findIndex(p => p.kind === 'human' && p.playerId === d.id);
+    if (i >= 0) a.splice(i, 1);
+    else a.push({ ...partFromPlayer(getPlayer(d.id)), team: a.length % 2 });
     render();
   },
-  'add-new-profile': () => {
-    const el = document.getElementById('guest-name');
-    const name = el.value.trim();
-    if (!name) { el.focus(); return toast('Bitte einen Namen eingeben'); }
-    if (db.players.some(p => p.name.toLowerCase() === name.toLowerCase())) return toast('Name existiert bereits', 'bad');
-    const p = addPlayer(name);
-    ui.setup.parts.push({ ...partFromPlayer(p), team: ui.setup.parts.length % 2 });
-    render();
+  'dlg-guest': () => {
+    const n = ui.setup.parts.filter(p => p.kind === 'guest').length + 1;
+    openModal({
+      title: 'Gast hinzufügen',
+      html: `<input id="dlg-name" class="input full" placeholder="Gast ${n}" maxlength="20" autocomplete="off"><p class="muted small">Gäste spielen mit, ihre Statistik wird aber nicht gespeichert.</p>`,
+      buttons: [{ label: 'Abbrechen', cls: 'ghost' }, {
+        label: 'Hinzufügen', cls: 'primary', fn: v => {
+          ui.setup.parts.push({ kind: 'guest', name: (v['dlg-name'] || '').trim() || `Gast ${n}`, team: ui.setup.parts.length % 2 });
+          render();
+        },
+      }],
+    });
   },
-  'add-bot': () => {
-    const lvl = +document.getElementById('bot-level').value;
-    db.settings.lastBot = lvl;
-    const same = ui.setup.parts.filter(p => p.kind === 'bot' && p.level === lvl).length;
-    ui.setup.parts.push({ kind: 'bot', name: `Dartbot ${lvl}${same ? ' (' + (same + 1) + ')' : ''}`, level: lvl, team: ui.setup.parts.length % 2 });
-    save();
-    render();
-  },
+  'dlg-profile': () => openModal({
+    title: 'Neues Spielerprofil',
+    html: '<input id="dlg-name" class="input full" placeholder="Name" maxlength="20" autocomplete="off"><p class="muted small">Für Profile werden Averages, Checkouts und Trainingswerte dauerhaft gespeichert.</p>',
+    buttons: [{ label: 'Abbrechen', cls: 'ghost' }, {
+      label: 'Anlegen', cls: 'primary', fn: v => {
+        const name = (v['dlg-name'] || '').trim();
+        if (!name) return toast('Bitte einen Namen eingeben');
+        if (db.players.some(p => p.name.toLowerCase() === name.toLowerCase())) return toast('Name existiert bereits', 'bad');
+        const p = addPlayer(name);
+        ui.setup.parts.push({ ...partFromPlayer(p), team: ui.setup.parts.length % 2 });
+        render();
+      },
+    }],
+  }),
+  'dlg-bot': () => openModal({
+    title: 'Dartbot hinzufügen', text: 'Wähle die Spielstärke. Die Zahl ist der ungefähre 3-Dart-Average des Bots.', grid: true,
+    buttons: BOT_LEVELS.map((b, i) => ({
+      label: `Stufe ${i + 1} · Ø ${b.avg}`, cls: (db.settings.lastBot || 5) === i + 1 ? 'primary' : '',
+      fn: () => {
+        const lvl = i + 1;
+        db.settings.lastBot = lvl;
+        const same = ui.setup.parts.filter(p => p.kind === 'bot' && p.level === lvl).length;
+        ui.setup.parts.push({ kind: 'bot', name: `Dartbot ${lvl}${same ? ' (' + (same + 1) + ')' : ''}`, level: lvl, team: ui.setup.parts.length % 2 });
+        save();
+        render();
+      },
+    })),
+  }),
   start: () => startFromSetup(),
 
   quit: () => openModal({

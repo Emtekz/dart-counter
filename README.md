@@ -22,10 +22,17 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
 - **Doppeltraining** – D1 → Bull, zufällige Doppel oder ein Lieblingsdoppel
 - **Checkout 121** – 121 in 9 Darts checken, bei Erfolg steigt das Ziel
 
+### Bedienung
+- Startseite als Spiel-Hub: X01 mit Schnellwahl (301/501/701 · Solo, Gegner, Dartbot, Doppel) und alle Trainingsspiele auf einen Blick
+- Zu jedem Spielmodus eine Erklärung der Regeln (ⓘ auf der Startseite, beim Einrichten und im Spiel)
+- Spieler einfach in Wurfreihenfolge antippen, Gäste und Bots per Dialog hinzufügen
+
 ### Spieler & Statistiken
 - Spielerprofile mit Farbe
 - X01: 3-Dart-Average, First-9-Average, Checkout-Quote, höchstes Finish, bestes Leg, 180er/140+/100+, Siege, Average-Verlauf
 - Trainings-Bestwerte und Schnitte je Variante, Bestenlisten
+- Verlaufsdiagramme (Average, Checkout-Quote, hohe Aufnahmen, Trainings) mit Zeitraumfilter
+- Synchronisation zwischen Geräten per Google-Anmeldung (Firebase)
 - Spielhistorie mit Detailansicht und Revanche
 - Rückgängig-Funktion, Spiel pausieren und später fortsetzen
 - Optionale Sprachansage, helles/dunkles Design
