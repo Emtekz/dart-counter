@@ -1,0 +1,73 @@
+// Persistenz im localStorage: Spieler, Spielhistorie, Einstellungen, laufendes Spiel.
+
+const KEY = 'dartcounter.v2';
+
+const DEFAULTS = () => ({
+  players: [],
+  games: [],
+  current: null,
+  settings: { inputMode: 'total', speech: false, theme: 'dark', lastSetup: {} },
+});
+
+export const COLORS = ['#22c55e', '#3b82f6', '#f97316', '#e11d48', '#a855f7', '#eab308', '#14b8a6', '#ec4899', '#64748b', '#84cc16'];
+
+function load() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY));
+    if (!raw) return DEFAULTS();
+    const d = DEFAULTS();
+    return { ...d, ...raw, settings: { ...d.settings, ...raw.settings } };
+  } catch {
+    return DEFAULTS();
+  }
+}
+
+export const db = load();
+
+export function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(db));
+  } catch (e) {
+    console.error('Speichern fehlgeschlagen', e);
+  }
+}
+
+export function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+export function getPlayer(id) {
+  return db.players.find(p => p.id === id);
+}
+
+export function addPlayer(name) {
+  const used = new Set(db.players.map(p => p.color));
+  const color = COLORS.find(c => !used.has(c)) || COLORS[db.players.length % COLORS.length];
+  const p = { id: uid(), name: name.trim(), color, created: Date.now() };
+  db.players.push(p);
+  save();
+  return p;
+}
+
+export function deletePlayer(id) {
+  db.players = db.players.filter(p => p.id !== id);
+  save();
+}
+
+export function exportData() {
+  return JSON.stringify({ app: 'dart-counter', version: 2, players: db.players, games: db.games, settings: db.settings }, null, 2);
+}
+
+export function importData(json) {
+  const d = JSON.parse(json);
+  if (!Array.isArray(d.players) || !Array.isArray(d.games)) throw new Error('Ungültige Datei');
+  db.players = d.players;
+  db.games = d.games;
+  if (d.settings) db.settings = { ...db.settings, ...d.settings };
+  save();
+}
+
+export function resetAll() {
+  Object.assign(db, DEFAULTS());
+  save();
+}
