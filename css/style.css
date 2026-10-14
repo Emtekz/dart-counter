@@ -807,3 +807,34 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; heig
 @keyframes navlive { 50% { opacity: .35; transform: scale(.8); } }
 .nav-resume { color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--red) 45%, transparent), color-mix(in srgb, var(--red-2) 15%, transparent)); }
 .nav-resume .ico { color: #fff; fill: #fff; stroke: none; }
+
+/* ---------- Cricket ---------- */
+.cr-board { grid-area: board; align-self: start; display: grid; gap: 3px; }
+.cr-corner { background: transparent; }
+.cr-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0;
+  padding: 8px 10px; background: var(--panel-2); box-shadow: inset 0 4px 0 var(--pc);
+  opacity: .7; transition: opacity .2s, background .2s;
+}
+.cr-head.act { opacity: 1; background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 28%, var(--panel-2)), var(--panel-2)); }
+.cr-head .cr-name { color: #fff; font-size: 1.35rem; }
+.cr-head .cr-name .cur { color: #fff; }
+.cr-head .cr-name span:not(.cur) { color: var(--muted); }
+.cr-score { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
+.cr-score b { font-family: var(--display); font-size: 2.2rem; font-weight: 900; font-style: italic; }
+.cr-score span { font-family: var(--display); font-weight: 700; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cr-num {
+  display: grid; place-items: center; background: #000; border: 1px solid #241a1d;
+  font-family: var(--display); font-size: 1.6rem; font-weight: 900; font-style: italic;
+}
+.cr-num.dead { color: #4a3a42; text-decoration: line-through; text-decoration-thickness: 2px; }
+.cr-cell { height: 46px; display: grid; place-items: center; background: var(--panel); }
+.cr-cell.act { background: var(--panel-2); }
+.cr-cell.dead { opacity: .35; }
+.mk { width: 30px; height: 30px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; }
+.mk.closed { stroke: var(--gold); }
+.cr-keys { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(54px, 1fr); gap: 5px; min-height: 0; }
+.cr-keys button { font-size: 1.8rem; font-weight: 900; font-style: italic; }
+.cr-keys .miss { color: var(--danger); font-size: 1.3rem; text-transform: uppercase; }
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) { .cr-cell { height: 58px; } }
+@media (max-width: 420px) { .cr-cell { height: 40px; } .mk { width: 26px; height: 26px; } .cr-head .cr-name { font-size: 1.1rem; } }

@@ -1,6 +1,10 @@
 // Trainingsspiele: Around the Clock, Bob's 27, Power Scoring, Doppeltraining, Checkout 121.
 import { uid } from './store.js';
 import { validTotal } from './x01.js';
+import { minDarts } from './checkout.js';
+
+// Bereiche für Zufalls-Checkouts
+export const RCHECK_RANGES = { '2-40': [2, 40], '41-80': [41, 80], '61-100': [61, 100], '101-170': [101, 170], '2-170': [2, 170] };
 
 const ALL_DOUBLES = [...Array.from({ length: 20 }, (_, i) => i + 1), 25];
 
@@ -21,6 +25,13 @@ export function newTraining(type, config, players) {
     else if (config.mode === 'random') st.targets = Array.from({ length: config.rounds }, () => ALL_DOUBLES[Math.floor(Math.random() * 21)]);
     else st.targets = Array(config.rounds).fill(config.target);
     st.ps = players.map(() => ({ idx: 0, hits: 0, darts: 0, per: {}, done: false }));
+  } else if (type === 'rcheck') {
+    // Für alle Spieler dieselben Zufalls-Restwerte – nur Werte, die mit den Darts pro Checkout checkbar sind
+    const [lo, hi] = RCHECK_RANGES[config.range] || [2, 170];
+    const ok = [];
+    for (let n = lo; n <= hi; n++) { const md = minDarts(n, 'double'); if (md && md <= Math.min(3, config.darts)) ok.push(n); }
+    st.targets = Array.from({ length: config.count }, () => ok[Math.floor(Math.random() * ok.length)]);
+    st.ps = players.map(() => ({ idx: 0, rem: st.targets[0], visit: 0, success: 0, darts: 0, successDarts: 0, done: false }));
   } else if (type === 'c121') {
     const lives = config.lives || 3;
     st.ps = players.map(() => ({ target: 121, rem: 121, visit: 0, checkpoint: 121, lives, success: 0, best: 0, darts: 0, done: false }));
@@ -110,6 +121,37 @@ export function trainingInput(st, val) {
       advance(st);
       break;
     }
+    case 'rcheck': {
+      if (!validTotal(val)) return false;
+      const maxDarts = st.config.darts || 6;
+      p.visit++;
+      p.darts += 3;
+      const used = p.visit * 3, target = st.targets[p.idx];
+      const after = p.rem - val;
+      const next = () => {
+        p.idx++;
+        p.visit = 0;
+        if (p.idx >= st.targets.length) p.done = true;
+        else p.rem = st.targets[p.idx];
+      };
+      if (after === 0) {
+        p.success++;
+        p.successDarts += used;
+        st.last = { text: `${name} checkt ${target} in ${used} Darts! ✔`, good: true };
+        next();
+      } else {
+        const bust = after < 0 || after === 1;
+        if (!bust) p.rem = after;
+        if (used >= maxDarts) {
+          st.last = { text: `${name}: ${target} nicht gecheckt`, good: false };
+          next();
+        } else {
+          st.last = { text: `${name}: ${bust ? 'Bust' : val} · noch ${maxDarts - used} Darts`, good: false };
+        }
+      }
+      advance(st);
+      break;
+    }
     case 'c121': {
       if (!validTotal(val)) return false;
       const maxDarts = st.config.darts || 9;
@@ -167,6 +209,7 @@ export function trainingResults(st) {
       case 'bobs27': return { metric: p.score, better: 'high', unit: 'Punkte', detail: `${p.out ? 'ausgeschieden · ' : ''}${pct(p.hits, p.darts)} Doppelquote`, hits: p.hits, darts: p.darts };
       case 'power': return { metric: +(p.n ? p.total / p.n : 0).toFixed(1), better: 'high', unit: 'Ø', detail: `${p.total} Punkte · Höchste ${p.high}`, total: p.total };
       case 'doubles': return { metric: +(p.darts ? (p.hits / p.darts) * 100 : 0).toFixed(1), better: 'high', unit: '%', detail: `${p.hits}/${p.darts} Doppel getroffen`, hits: p.hits, darts: p.darts };
+      case 'rcheck': return { metric: +((p.success / st.targets.length) * 100).toFixed(1), better: 'high', unit: '%', detail: `${p.success}/${st.targets.length} gecheckt${p.success ? ` · Ø ${(p.successDarts / p.success).toFixed(1).replace('.', ',')} Darts` : ''}`, success: p.success };
       case 'c121': return { metric: p.best, better: 'high', unit: 'Ziel', detail: `${p.success} Checks · ${p.darts} Darts · Checkpoint ${p.checkpoint}`, best: p.best, success: p.success };
     }
   });
@@ -198,6 +241,10 @@ export function variantOf(type, c) {
       const m = c.mode === 'seq' ? 'D1 → Bull' : c.mode === 'random' ? `Zufällig (${c.rounds})` : `${dlabel(c.target)} (${c.rounds})`;
       return { key: `doubles-${c.mode}${c.mode === 'fixed' ? '-' + c.target : ''}`, label: `Doppeltraining · ${m}` };
     }
+    case 'rcheck': return {
+      key: `rcheck-${c.range}-${c.darts}-${c.count}`,
+      label: `Zufalls-Checkouts · ${c.range.replace('-', '–')} · ${c.darts} Darts`,
+    };
     case 'c121': return {
       key: `c121-${c.darts}-${c.lives}-${c.checkpoint || 0}-${c.onFail}`,
       label: `Checkout 121 · ${c.darts} Darts · ${c.lives} Leben${c.checkpoint ? ` · Checkpoint ≤ ${c.checkpoint}` : ''}`,

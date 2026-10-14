@@ -7,6 +7,7 @@ import { x01Agg, trainingAgg, gamesOf, trainingBoards, rangeStart, x01Matches, t
 import { lineChart, barChart, resetCharts, chartWidth } from './charts.js';
 import { sync, initSync, signIn, signOut, statusText } from './sync.js';
 import { rulesHtml } from './rules.js';
+import { newCricket, throwCricket, cricketActive, cricketResults, cricketBotTarget, isDead, CRICKET_NUMS } from './cricket.js';
 import { AVATARS, avatar, avatarSvg } from './avatars.js';
 
 /* ---------- Hilfsfunktionen ---------- */
@@ -94,6 +95,15 @@ const GAMES = {
       { key: 'target', label: 'Doppel', choices: DOUBLE_CHOICES, show: o => o.mode === 'fixed' },
     ],
   },
+  rcheck: {
+    name: 'Zufalls-Checkouts', cat: 'training', desc: 'Zufällige Restwerte checken – die Quote zählt',
+    defaults: { range: '2-170', darts: 6, count: 20 },
+    options: [
+      { key: 'range', label: 'Bereich', choices: [['2-40', '2–40'], ['41-80', '41–80'], ['61-100', '61–100'], ['101-170', '101–170'], ['2-170', '2–170']] },
+      { key: 'darts', label: 'Darts pro Checkout', choices: [[3, '3'], [6, '6'], [9, '9']] },
+      { key: 'count', label: 'Anzahl Checkouts', choices: [[10, '10'], [20, '20'], [30, '30']] },
+    ],
+  },
   c121: {
     name: 'Checkout 121', cat: 'training', desc: 'Ab 121 aufwärts checken – mit Checkpoints und Leben',
     defaults: { darts: 9, checkpoint: 6, onFail: 'checkpoint', lives: 3 },
@@ -104,10 +114,22 @@ const GAMES = {
       { key: 'lives', label: 'Leben', choices: range(1, 5) },
     ],
   },
+  cricket: {
+    name: 'Cricket', cat: 'match', desc: '15 bis 20 und Bull schließen, Punkte sammeln', bots: true, teams: true,
+    defaults: { mode: 'standard', legs: 1 },
+    options: [
+      { key: 'mode', label: 'Variante', choices: [['standard', 'Standard'], ['cutthroat', 'Cut-Throat'], ['noscore', 'Ohne Punkte']] },
+      { key: 'legs', label: 'Legs (First to)', choices: range(1, 5) },
+    ],
+  },
 };
 
+const CRICKET_MODE = { standard: 'Standard', cutthroat: 'Cut-Throat', noscore: 'Ohne Punkte' };
+const cricketTitle = c => `Cricket · ${CRICKET_MODE[c.mode]} · First to ${c.legs} Leg${c.legs > 1 ? 's' : ''}`;
+const isMatch = type => GAMES[type]?.cat === 'match';
+
 const GAME_ART = {
-  x01: '501', atc: '1→20', bobs27: '27', power: '180', doubles: 'D16', c121: '121',
+  x01: '501', atc: '1→20', bobs27: '27', power: '180', doubles: 'D16', c121: '121', rcheck: 'RND', cricket: 'CR',
 };
 
 /* ---------- UI-Zustand ---------- */
@@ -266,6 +288,14 @@ function viewHome() {
   </section>
 
   <section class="block">
+    <div class="block-head"><h2>Cricket</h2>${infoBtn('cricket')}</div>
+    <div class="mode-bar">${X01_MODES.map(([k, ic, label, sub]) => `
+      <button class="mode-seg" data-action="setup" data-type="cricket" data-preset="${k}" title="${label} – ${typeof sub === 'function' ? sub() : sub}">
+        ${icon(ic)}<span>${label}</span></button>`).join('')}
+    </div>
+  </section>
+
+  <section class="block">
     <div class="block-head"><h2>Training</h2></div>
     <div class="strips">${trainings.map(([k, g]) => `
       <div class="strip">
@@ -301,6 +331,7 @@ function favTitle(f) {
     const out = { double: 'Double Out', single: 'Single Out', master: 'Master Out' }[f.opts.out];
     return { art: f.opts.start, title: `${f.opts.start} · ${out}`, sub: `First to ${f.opts.format === 'sets' ? f.opts.sets + ' Sets' : f.opts.legs + (f.opts.legs > 1 ? ' Legs' : ' Leg')}${f.opts.throwOff === 'bull' ? ' · Ausbullen' : ''}` };
   }
+  if (f.type === 'cricket') return { art: GAME_ART.cricket, title: 'Cricket', sub: cricketTitle(f.opts).split(' · ').slice(1).join(' · ') };
   return { art: GAME_ART[f.type], title: GAMES[f.type].name, sub: variantOf(f.type, f.opts).label.split(' · ').slice(1).join(' · ') };
 }
 const favPlayers = f => {
@@ -360,13 +391,14 @@ function gameRow(g) {
     ? g.sides.map(s => `${s.members.map(m => esc(g.players[m].name)).join(' & ')}${g.winner != null ? ` <b>${g.config.format === 'sets' ? s.sets : s.legs}</b>` : ''}`).join('<span class="muted"> : </span>')
     : g.players.map((p, i) => `${esc(p.name)} <b>${fm(g.results[i].metric)}</b>`).join(' · ');
   return `<a class="list-row" href="#/result/${g.id}">
-    <span class="badge ${g.type === 'x01' ? 'match' : 'train'}">${g.type === 'x01' ? g.config.start : GAME_ART[g.type]}</span>
+    <span class="badge ${isMatch(g.type) ? 'match' : 'train'}">${g.type === 'x01' ? g.config.start : GAME_ART[g.type]}</span>
     <span class="grow"><span class="row-title">${esc(g.variant.label)}</span><span class="muted small">${names}</span></span>
     <span class="muted small nowrap">${fmtDate(g.date)}</span></a>`;
 }
 
 function gameTitle(st) {
   if (st.type === 'x01') return x01Summary(st.config);
+  if (st.type === 'cricket') return cricketTitle(st.config);
   return variantOf(st.type, st.config).label;
 }
 
@@ -391,7 +423,7 @@ function initSetup(type) {
 /** Voreinstellungen aus den Schnellwahl-Knöpfen der Startseite. */
 function applyPreset(preset) {
   const s = ui.setup;
-  s.opts.start = homeStart();
+  if (s.type === 'x01') s.opts.start = homeStart();
   const people = s.parts.filter(p => p.kind !== 'bot');
   const first = people[0] || (db.players[0] ? partFromPlayer(db.players[0]) : { kind: 'guest', name: 'Spieler 1' });
   const lvl = db.settings.lastBot || 5;
@@ -434,7 +466,7 @@ function viewSetup(type) {
     ${s.parts.map((p, i) => (p.team === t ? `<button class="team-member" data-action="part-team" data-i="${i}">${dot(partColor(p, i))}${esc(partName(p))}<span class="muted">⇄</span></button>` : '')).join('') || '<span class="muted small">leer</span>'}</div>`;
 
   const err = setupError();
-  const startLabel = type === 'x01' ? `${s.opts.start} starten` : 'Training starten';
+  const startLabel = type === 'x01' ? `${s.opts.start} starten` : type === 'cricket' ? 'Cricket starten' : 'Training starten';
   const isFav = !!findFavorite(s);
   return `${pageHead(def.name, '#/', `<button class="btn ghost sm fav-toggle ${isFav ? 'on' : ''}" data-action="fav-toggle" aria-pressed="${isFav}" title="${isFav ? 'Aus Favoriten entfernen' : 'Als Favorit speichern'}">${icon('star')}<span class="hide-sm"> ${isFav ? 'Favorit' : 'Merken'}</span></button><button class="btn ghost sm" data-action="rules" data-type="${type}">${icon('info')}<span class="hide-sm"> Regeln</span></button>`)}
 
@@ -483,7 +515,7 @@ function startFromSetup() {
     name: partName(p), playerId: p.kind === 'human' ? p.playerId : null, kind: p.kind, level: p.level || null, color: partColor(p, i),
   }));
   let st;
-  if (s.type === 'x01') {
+  if (s.type === 'x01' || s.type === 'cricket') {
     let sides;
     if (s.teams) {
       sides = [0, 1].map(t => {
@@ -491,11 +523,11 @@ function startFromSetup() {
         return { name: `Team ${t + 1}`, members };
       });
     } else sides = players.map((p, i) => ({ name: p.name, members: [i] }));
-    if (s.opts.throwOff === 'bull' && sides.length > 1) {
+    if (s.type === 'x01' && s.opts.throwOff === 'bull' && sides.length > 1) {
       ui.bull = { opts: { ...s.opts }, players, sides, res: sides.map(() => null), active: sides.map((_, i) => i), winner: null };
       return go('#/bulloff');
     }
-    st = newX01({ ...s.opts }, players, sides);
+    st = s.type === 'x01' ? newX01({ ...s.opts }, players, sides) : newCricket({ ...s.opts }, players, sides);
   } else {
     st = newTraining(s.type, { ...s.opts }, players);
   }
@@ -593,7 +625,7 @@ function startAfterBull() {
 
 function viewGame() {
   const st = db.current.state;
-  return st.type === 'x01' ? viewX01(st) : viewTraining(st);
+  return st.type === 'x01' ? viewX01(st) : st.type === 'cricket' ? viewCricket(st) : viewTraining(st);
 }
 
 const gameBar = (title, sub) => `<div class="game-bar">
@@ -605,8 +637,8 @@ const gameBar = (title, sub) => `<div class="game-bar">
 </div>`;
 
 function isBotTurn(st) {
-  if (st.type !== 'x01' || st.finished) return false;
-  return st.players[activeIndex(st)].kind === 'bot';
+  if (!['x01', 'cricket'].includes(st.type) || st.finished) return false;
+  return st.players[st.type === 'cricket' ? cricketActive(st) : activeIndex(st)].kind === 'bot';
 }
 
 function viewX01(st) {
@@ -712,6 +744,63 @@ function dartPad() {
     </div></div>`;
 }
 
+/* ---------- Cricket ---------- */
+
+const CR_MARK = [
+  '',
+  '<svg class="mk" viewBox="0 0 24 24"><path d="M6 19 18 5"/></svg>',
+  '<svg class="mk" viewBox="0 0 24 24"><path d="M6 19 18 5M6 5l12 14"/></svg>',
+  '<svg class="mk closed" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 16.5l9-9M7.5 7.5l9 9"/></svg>',
+];
+
+function viewCricket(st) {
+  const L = st.leg, bot = isBotTurn(st), two = st.sides.length === 2;
+  const act = cricketActive(st), player = st.players[act];
+  const scoring = st.config.mode !== 'noscore';
+  const heads = st.sides.map((S, i) => {
+    const color = st.players[S.members[0]].color;
+    const names = S.members.map((m, k) => `<span class="${k === S.ptr ? 'cur' : ''}">${st.players[m].kind === 'bot' ? icon('bot', 'xs') : miniIcon(st.players[m].playerId)}${esc(st.players[m].name)}</span>`).join('<i>&</i>');
+    return `<div class="cr-head ${i === L.turn ? 'act' : ''}" style="--pc:${color}"><div class="cr-name sb-names">${names}</div>
+      <div class="cr-score">${scoring ? `<b>${L.pts[i]}</b>` : ''}<span>Legs ${S.legs}</span></div></div>`;
+  });
+  const order = two ? [0, 'n', 1] : ['n', ...st.sides.map((_, i) => i)];
+  const head = order.map(o => (o === 'n' ? '<div class="cr-corner"></div>' : heads[o])).join('');
+  const rows = CRICKET_NUMS.map(num => {
+    const dead = isDead(st, num);
+    return order.map(o => (o === 'n'
+      ? `<div class="cr-num ${dead ? 'dead' : ''}">${num === 25 ? 'Bull' : num}</div>`
+      : `<div class="cr-cell ${o === L.turn ? 'act' : ''} ${dead ? 'dead' : ''}">${CR_MARK[L.marks[o][num]]}</div>`)).join('');
+  }).join('');
+  const cols = two ? 'minmax(0,1fr) 74px minmax(0,1fr)' : `64px repeat(${st.sides.length}, minmax(0,1fr))`;
+  const slots = [0, 1, 2].map(i => `<span class="slot ${L.cur[i] ? 'filled' : ''}">${L.cur[i] ? L.cur[i].label : ''}</span>`).join('');
+  const last = st.last ? `${esc(st.players[st.last.pi].name)}: ${st.last.labels.join(' · ')} = <b>${st.last.marks} Mark${st.last.marks === 1 ? '' : 's'}</b>${st.last.points ? ` · ${st.last.points} Punkte` : ''}` : '';
+  return `<div class="game x01 cricket">
+    ${gameBar(gameTitle(st), `Leg ${st.legNo}`)}
+    <div class="cr-board" style="grid-template-columns:${cols}">${head}${rows}</div>
+    <div class="sb-info">
+      <div class="sb-turn">${dot(player.color)}<b>${esc(player.name)}</b><span>am Wurf</span><span class="slots">${slots}</span></div>
+      ${last ? `<div class="sb-last">${last}</div>` : ''}
+    </div>
+    ${bot ? `<div class="pad bot-pad"><div class="bot-think">${icon('bot')}<b>${esc(player.name)}</b> wirft …</div></div>` : cricketPad()}
+  </div>`;
+}
+
+function cricketPad() {
+  const m = ui.mod, pre = m === 2 ? 'D' : m === 3 ? 'T' : '';
+  return `<div class="pad dartpad crpad">
+    <div class="dp-mods">
+      <button class="${m === 2 ? 'on d' : ''}" data-action="mod" data-v="2">Double</button>
+      <button class="${m === 3 ? 'on t' : ''}" data-action="mod" data-v="3">Triple</button>
+    </div>
+    <div class="cr-keys">${[20, 19, 18, 17, 16, 15].map(n => `<button data-action="cr-dart" data-n="${n}">${pre}${n}</button>`).join('')}
+      <button data-action="cr-dart" data-n="25" data-m="1">25</button>
+      <button data-action="cr-dart" data-n="25" data-m="2">Bull</button>
+      <button class="miss" data-action="cr-dart" data-n="0">Daneben</button>
+    </div>
+    <div class="dp-row"><button class="muted-key" data-action="undo" style="grid-column:1/-1">⌫ Rückgängig</button></div>
+  </div>`;
+}
+
 /* ---------- Trainingsansicht ---------- */
 
 function viewTraining(st) {
@@ -724,6 +813,7 @@ function viewTraining(st) {
       case 'bobs27': main = q.score; sub = q.out ? 'ausgeschieden' : q.done ? 'fertig' : `nächstes ${dlabel(st.targets[q.idx])}`; break;
       case 'power': main = q.total; sub = `${q.n}/${st.config.rounds} · Ø ${f1(q.n ? q.total / q.n : 0)}`; break;
       case 'doubles': main = pct(q.hits, q.darts); sub = `${q.hits}/${q.darts} · ${q.done ? 'fertig' : `${q.idx + 1}/${st.targets.length}`}`; break;
+      case 'rcheck': main = `${q.success}/${st.targets.length}`; sub = q.done ? 'fertig' : `Checkout ${q.idx + 1}/${st.targets.length} · ${pct(q.success, q.idx)}`; break;
       case 'c121': main = q.best || '–'; sub = q.done ? `fertig · ${q.success} Checks` : `Ziel ${q.target} · ${hearts(q.lives, st.config.lives)} · CP ${q.checkpoint}`; break;
     }
     return `<div class="sb-row ${i === st.turn && !st.finished ? 'act' : ''} ${q.done ? 'done' : ''}" style="--pc:${x.color}">
@@ -755,6 +845,14 @@ function viewTraining(st) {
       const t = st.targets[p.idx];
       focus = focusPanel(`Ziel ${p.idx + 1}/${st.targets.length}`, dlabel(t), `Quote ${pct(p.hits, p.darts)}`);
       pad = hitButtons([[0, '0', 'miss'], [1, '1'], [2, '2'], [3, '3']], 'Treffer (3 Darts)');
+      break;
+    }
+    case 'rcheck': {
+      const route = checkoutRoute(p.rem, 3, 'double', favouriteDouble(getPlayer(pl.playerId)));
+      const from = p.visit * 3 + 1;
+      focus = focusPanel(`Checkout ${p.idx + 1}/${st.targets.length} · Dart ${from}–${from + 2} von ${st.config.darts}`, p.rem,
+        route ? checkoutBanner(route, []) : '<span class="muted">Mit 3 Darts nicht checkbar</span>');
+      pad = keypad(route ? [{ v: p.rem, label: `Check ${p.rem}`, cls: 'accent' }] : []);
       break;
     }
     case 'c121': {
@@ -820,6 +918,10 @@ function act(fn) {
   const res = fn(st);
   if (res === false) { db.current.undo.pop(); return; }
   if (st.type === 'x01' && res) onVisit(st, res, legBefore);
+  if (st.type === 'cricket' && res?.won && !st.finished) {
+    const who = st.sides[res.side].members.map(m => st.players[m].name).join(' & ');
+    toast(`${icon('trophy')} <b>${esc(who)}</b> gewinnt das Leg`, 'big', 2400);
+  }
   ui.input = '';
   if (st.finished) return finishGame();
   save();
@@ -883,21 +985,19 @@ function submitKeypad(value) {
 
 function finishGame() {
   const st = db.current.state;
-  const results = st.type === 'x01' ? x01Results(st) : trainingResults(st);
+  const results = st.type === 'x01' ? x01Results(st) : st.type === 'cricket' ? cricketResults(st) : trainingResults(st);
   const rec = {
-    id: st.id, type: st.type, variant: st.type === 'x01' ? { key: `x01-${st.config.start}`, label: gameTitle(st) } : variantOf(st.type, st.config),
+    id: st.id, type: st.type,
+    variant: st.type === 'x01' ? { key: `x01-${st.config.start}`, label: gameTitle(st) } : st.type === 'cricket' ? { key: `cricket-${st.config.mode}`, label: cricketTitle(st.config) } : variantOf(st.type, st.config),
     date: st.started, ended: st.ended || Date.now(), config: st.config,
     players: st.players.map(p => ({ name: p.name, playerId: p.playerId, kind: p.kind, level: p.level, color: p.color })),
     sides: st.sides?.map(s => ({ name: s.name, members: s.members, legs: s.legs, sets: s.sets })),
     winner: st.winner ?? null, results,
-    teams: st.type === 'x01' && st.sides.some(s => s.members.length > 1),
+    teams: isMatch(st.type) && st.sides.some(s => s.members.length > 1),
   };
   db.games.push(rec);
   db.current = null;
   save();
-  if (st.type === 'x01') {
-    const w = st.sides[st.winner];
-  }
   go('#/result/' + rec.id);
 }
 
@@ -913,6 +1013,11 @@ function scheduleBot() {
     ui.botTimer = null;
     if (route.name !== 'game' || ui.modal || !db.current || !isBotTurn(db.current.state)) return;
     const s = db.current.state, L = s.leg, side = L.turn;
+    if (s.type === 'cricket') {
+      const target = cricketBotTarget(s);
+      const hit = throwAt(target, s.players[cricketActive(s)].level, target.n === 25);
+      return act(x => throwCricket(x, hit));
+    }
     const pl = s.players[activeIndex(s)];
     const rem = L.rem[side] - curScore(s);
     const opened = L.opened[side] || L.cur.some(d => d.score > 0);
@@ -990,11 +1095,11 @@ function rematch(id) {
   if (!g) return;
   const players = g.players.map(p => ({ ...p, name: p.playerId ? getPlayer(p.playerId)?.name || p.name : p.name }));
   let st;
-  if (g.type === 'x01') {
+  if (isMatch(g.type)) {
     // Anwurf wechselt: Seitenreihenfolge rotieren
     const sides = g.sides.map(s => ({ name: s.name, members: s.members }));
     sides.push(sides.shift());
-    st = newX01({ ...g.config }, players, sides);
+    st = g.type === 'x01' ? newX01({ ...g.config }, players, sides) : newCricket({ ...g.config }, players, sides);
   } else {
     st = newTraining(g.type, { ...g.config }, players);
   }
@@ -1439,6 +1544,12 @@ const actions = {
     act(st => throwDart(st, t));
   },
   hit: d => act(st => trainingInput(st, +d.v)),
+  'cr-dart': d => {
+    const n = +d.n;
+    const t = n === 0 ? throwOf(0, 0) : throwOf(n, d.m ? +d.m : ui.mod);
+    ui.mod = 1;
+    act(st => throwCricket(st, t));
+  },
 
   rematch: d => guardRunning(() => rematch(d.id)),
   'delete-game': d => confirmBox('Spiel löschen?', 'Das Spiel wird aus der Historie und allen Statistiken entfernt.', 'Löschen', () => {
@@ -1532,12 +1643,12 @@ document.addEventListener('keydown', e => {
   const st = db.current.state;
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); return undo(); }
   if (isBotTurn(st)) return;
-  const usesKeypad = (st.type === 'x01' && db.settings.inputMode === 'total') || st.type === 'power' || st.type === 'c121';
+  const usesKeypad = (st.type === 'x01' && db.settings.inputMode === 'total') || ['power', 'c121', 'rcheck'].includes(st.type);
   if (usesKeypad) {
     if (/^\d$/.test(e.key)) actions.kp({ v: e.key });
     else if (e.key === 'Backspace') actions['kp-del']();
     else if (e.key === 'Enter') submitKeypad();
-  } else if (st.type !== 'x01') {
+  } else if (!isMatch(st.type)) {
     const max = st.type === 'atc' ? (st.config.jumps ? 3 : 1) : 3;
     if (/^\d$/.test(e.key) && +e.key <= max) act(s => trainingInput(s, +e.key));
     else if (e.key === 'Backspace') undo();

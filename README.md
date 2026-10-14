@@ -17,11 +17,16 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
 - **Allein, gegeneinander (bis 8 Spieler), im Doppel (Teams, z. B. 2 vs 2) oder gegen den Dartbot**
 - **Dartbot** in 10 Stufen (ca. Ø 25 bis Ø 100), simuliert echte Streuung auf dem Board
 
+### Cricket
+- Zahlen 15–20 und Bull schließen, Varianten Standard, Cut-Throat und ohne Punkte
+- Gegen Freunde, im Doppel oder gegen den Dartbot; Wertung als MPR (Marks per Round)
+
 ### Trainingsspiele
 - **Around the Clock** – 1 bis 20 (+ Bull), beliebig / nur Doubles / nur Triples, optional mit Sprüngen
 - **Bob's 27** – D1 bis Bull, Start mit 27 Punkten
 - **Power Scoring** – möglichst viele Punkte in 5/10/20/33 Aufnahmen
 - **Doppeltraining** – D1 → Bull, zufällige Doppel oder ein Lieblingsdoppel
+- **Zufalls-Checkouts** – zufällige Restwerte in wählbarem Bereich checken, mit 3/6/9 Darts pro Checkout
 - **Checkout 121** – ab 121 aufwärts checken, mit Darts pro Ziel (3–15), Checkpoints für schnelle Checks und 1–5 Leben
 
 ### Bedienung

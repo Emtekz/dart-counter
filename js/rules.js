@@ -64,6 +64,36 @@ export const RULES = {
     score: 'Gewertet wird die Trefferquote in Prozent. Profis liegen bei etwa 40 %.',
     tip: 'Übe besonders D16, D20 und D8 – auf diesen Doppeln enden die meisten Checkouts.',
   },
+  cricket: {
+    goal: 'Schließe die Zahlen 15 bis 20 und das Bull – und liege dabei nach Punkten vorn.',
+    steps: [
+      'Es zählen nur die Felder <b>15, 16, 17, 18, 19, 20</b> und <b>Bull</b>. Alles andere ist ein Fehlwurf.',
+      'Jedes Feld braucht <b>3 Treffer</b> („Marks“), dann ist es für dich geschlossen. Single = 1, Double = 2, Triple = 3 Marks; Single-Bull 1, Bullseye 2.',
+      'Triffst du ein Feld, das du geschlossen hast, der Gegner aber noch nicht, bekommst du dessen Wert als <b>Punkte</b> (z. B. T20 = 60).',
+      'Haben alle ein Feld geschlossen, ist es „tot“ und bringt keine Punkte mehr.',
+      'Gewonnen hat, wer <b>alle Felder geschlossen</b> hat und <b>mindestens gleich viele Punkte</b> besitzt.',
+    ],
+    modes: [
+      ['Standard', 'Punkte bekommst du selbst – mehr Punkte ist besser.'],
+      ['Cut-Throat', 'Deine Punkte bekommen die Gegner, die das Feld noch offen haben – weniger Punkte ist besser. Ideal für 3+ Spieler.'],
+      ['Ohne Punkte', 'Nur Schließen zählt – wer zuerst alles zu hat, gewinnt.'],
+    ],
+    input: 'Tippe jeden Dart einzeln: erst Double oder Triple wählen (falls nötig), dann die Zahl. Für Felder außerhalb von 15–20 und Bull „Daneben“.',
+    score: 'Gewertet wird „MPR“ (Marks per Round) – wie viele Marks du im Schnitt pro Aufnahme triffst. Profis liegen über 3.',
+    tip: 'Klassische Taktik: von oben nach unten schließen (20 → 15) und erst punkten, wenn du nach Punkten hinten liegst.',
+  },
+  rcheck: {
+    goal: 'Checke möglichst viele zufällige Restwerte – trainiert das Finishen unter Abwechslung.',
+    steps: [
+      'Die App gibt einen zufälligen Restwert vor, z. B. 87. Gespielt wird mit Double Out.',
+      'Pro Checkout hast du eine feste Anzahl Darts, z. B. <b>6 Darts</b> (= 2 Aufnahmen).',
+      'Gib pro Aufnahme die erzielten Punkte ein – der Rest wird automatisch berechnet, Checkout-Vorschläge siehst du im Banner.',
+      'Geschafft oder Darts aufgebraucht? Dann kommt der nächste Zufallswert.',
+      'Bei mehreren Spielern bekommen alle dieselben Restwerte – fair vergleichbar.',
+    ],
+    score: 'Gewertet wird die Checkout-Quote in Prozent, dazu die durchschnittliche Dart-Anzahl pro geschafftem Checkout.',
+    tip: 'Wähle den Bereich passend zu deiner Schwäche – z. B. nur 61–100, wenn dir Zwei-Dart-Finishes schwerfallen.',
+  },
   c121: {
     goal: 'Checke dich von 121 aus so weit nach oben wie möglich – bevor dir die Leben ausgehen.',
     steps: [
