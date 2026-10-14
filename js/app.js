@@ -183,7 +183,6 @@ function say(text) {
 /* ---------- Rendering ---------- */
 
 function render() {
-  document.documentElement.dataset.theme = db.settings.theme;
   const r = route.name;
   if (r !== 'game') stopBot();
   resetCharts();
@@ -236,48 +235,46 @@ function viewHome() {
   const start = homeStart();
   const trainings = Object.entries(GAMES).filter(([, g]) => g.cat === 'training');
   return `
-  <header class="brand-head">
-    <h1 class="brand"><span class="b1">Dart</span><span class="b2">Counter</span></h1>
-    <div class="brand-tag"><span>Zählen</span><i></i><span>Trainieren</span><i></i><span>Besser werden</span></div>
+  <header class="hero">
+    <div class="hero-stripes" aria-hidden="true"></div>
+    <div class="kicker">Dart Counter</div>
+    <h1 class="hero-title">Game<span>On.</span></h1>
   </header>
 
-  ${cur ? `<section class="card resume">
-      <span class="resume-icon">${icon('play')}</span>
-      <div class="grow"><div class="eyebrow">Laufendes Spiel</div><div class="resume-title">${esc(gameTitle(cur))}</div>
-      <div class="muted small">${esc(cur.players.map(p => p.name).join(' · '))}</div></div>
-      <div class="row gap"><button class="btn ghost sm" data-action="discard-current">Verwerfen</button><a class="btn primary" href="#/game">Weiter</a></div>
-    </section>` : ''}
+  ${cur ? `<a class="go-bar" href="#/game">
+      <span><small>Weiterspielen</small>${esc(gameTitle(cur))}</span>${icon('play', 'go-ico')}</a>
+    <div class="go-sub"><span class="muted">${esc(cur.players.map(p => p.name).join(' · '))}</span>
+      <button class="link-btn" data-action="discard-current">Verwerfen</button></div>` : ''}
 
-  <section class="card x01-card">
-    <img src="icons/icon-512.png" alt="" class="hero-board">
-    <div class="x01-head">
-      <div><div class="eyebrow">Match</div><h2>X01</h2><p class="muted small">Von ${start} genau auf 0 – der Dart-Klassiker.</p></div>
-      ${infoBtn('x01')}
-    </div>
-    <div class="seg start-seg" role="group" aria-label="Startpunkte">${[301, 501, 701].map(v =>
+  <section class="block">
+    <div class="block-head"><h2>X01 <em>Match</em></h2>${infoBtn('x01')}</div>
+    <div class="score-pick" role="group" aria-label="Startpunkte">${[301, 501, 701].map(v =>
       `<button class="${start === v ? 'on' : ''}" data-action="home-start" data-v="${v}">${v}</button>`).join('')}</div>
     <div class="mode-grid">${X01_MODES.map(([k, ic, label, sub]) => `
-      <button class="mode-btn" data-action="setup" data-type="x01" data-preset="${k}">
+      <button class="mode-tile" data-action="setup" data-type="x01" data-preset="${k}">
         ${icon(ic)}<b>${label}</b><span>${typeof sub === 'function' ? sub() : sub}</span></button>`).join('')}
     </div>
   </section>
 
-  <h3 class="section-title">Training</h3>
-  <div class="train-grid">${trainings.map(([k, g]) => `
-    <div class="train-card">
-      <button class="train-main" data-action="setup" data-type="${k}">
-        <span class="game-art">${GAME_ART[k]}</span>
-        <span class="tc-text"><b>${g.name}</b><span class="muted small">${g.desc}</span></span>
-      </button>
-      ${infoBtn(k)}
-    </div>`).join('')}
-  </div>
+  <section class="block">
+    <div class="block-head"><h2>Training</h2></div>
+    <div class="strips">${trainings.map(([k, g]) => `
+      <div class="strip">
+        <button class="strip-main" data-action="setup" data-type="${k}">
+          <span class="strip-n">${GAME_ART[k]}</span>
+          <span class="strip-text"><b>${g.name}</b><span>${g.desc}</span></span>
+        </button>
+        ${infoBtn(k)}
+      </div>`).join('')}
+    </div>
+  </section>
 
-  ${!db.players.length ? `<a class="card empty-cta" href="#/players">${icon('user')}<div><b>Lege Spielerprofile an</b>
+  ${!db.players.length ? `<a class="panel empty-cta" href="#/players">${icon('user')}<div><b>Spielerprofile anlegen</b>
     <div class="muted small">Dann werden Averages, Checkout-Quoten und Trainingsbestwerte für jeden Spieler gespeichert.</div></div></a>` : ''}
 
-  ${recent.length ? `<div class="section-row"><h3 class="section-title">Zuletzt gespielt</h3><a class="text-link" href="#/stats">Alle Spiele</a></div>
-    <div class="list">${recent.map(gameRow).join('')}</div>` : ''}`;
+  ${recent.length ? `<section class="block">
+    <div class="block-head"><h2>Zuletzt</h2><a class="text-link" href="#/stats">Alle Spiele</a></div>
+    <div class="list">${recent.map(gameRow).join('')}</div></section>` : ''}`;
 }
 
 const infoBtn = type => `<button class="icon-btn info-btn" data-action="rules" data-type="${type}" aria-label="So funktioniert ${esc(GAMES[type].name)}" title="Regeln & Erklärung">${icon('info')}</button>`;
@@ -360,16 +357,12 @@ function viewSetup(type) {
       `<button class="${s.opts[o.key] === v ? 'on' : ''}" data-action="opt" data-key="${o.key}" data-value="${J(v)}">${l}</button>`).join('')}</div></div>`).join('');
 
   // Spieler-Auswahl: Profile antippen (Reihenfolge = Wurfreihenfolge), Gäste/Bots mit ✕ entfernen
-  const order = new Map(s.parts.map((p, i) => [p.kind === 'human' ? 'h:' + p.playerId : 'x:' + i, i]));
-  const profileChips = db.players.map(p => {
-    const i = order.get('h:' + p.id);
-    return i == null
-      ? `<button class="pchip" data-action="toggle-player" data-id="${p.id}" style="--c:${p.color}">${dot(p.color)}${esc(p.name)}</button>`
-      : `<button class="pchip on" data-action="toggle-player" data-id="${p.id}" style="--c:${p.color}" aria-pressed="true"><span class="num">${i + 1}</span>${esc(p.name)}</button>`;
-  }).join('');
-  const extraChips = s.parts.map((p, i) => (p.kind === 'human' ? '' : `
-    <button class="pchip on" data-action="part-del" data-i="${i}" style="--c:${partColor(p, i)}" aria-label="${esc(partName(p))} entfernen">
+  const selectedChips = s.parts.map((p, i) => (p.kind === 'human'
+    ? `<button class="pchip on" data-action="toggle-player" data-id="${p.playerId}" style="--c:${partColor(p, i)}" aria-pressed="true"><span class="num">${i + 1}</span>${esc(partName(p))}</button>`
+    : `<button class="pchip on" data-action="part-del" data-i="${i}" style="--c:${partColor(p, i)}" aria-label="${esc(partName(p))} entfernen">
       <span class="num">${i + 1}</span>${p.kind === 'bot' ? icon('bot', 'xs') + ' ' : ''}${esc(partName(p))}${icon('x', 'xs')}</button>`)).join('');
+  const otherChips = db.players.filter(p => !s.parts.some(x => x.playerId === p.id))
+    .map(p => `<button class="pchip" data-action="toggle-player" data-id="${p.id}" style="--c:${p.color}">${dot(p.color)}${esc(p.name)}</button>`).join('');
 
   const teamBox = t => `<div class="team-box t${t}"><div class="team-title">Team ${t + 1}</div>
     ${s.parts.map((p, i) => (p.team === t ? `<button class="team-member" data-action="part-team" data-i="${i}">${dot(partColor(p, i))}${esc(partName(p))}<span class="muted">⇄</span></button>` : '')).join('') || '<span class="muted small">leer</span>'}</div>`;
@@ -381,7 +374,7 @@ function viewSetup(type) {
   <section class="card">
     <div class="row between"><h3>Wer spielt?</h3>${s.parts.length > 1 ? `<button class="btn ghost sm" data-action="shuffle">${icon('shuffle')} Mischen</button>` : ''}</div>
     <p class="muted small">${db.players.length ? 'Tippe die Spieler in der Wurfreihenfolge an.' : 'Füge Gäste hinzu oder lege ein Profil an, um Statistiken zu speichern.'}</p>
-    <div class="pick">${profileChips}${extraChips}</div>
+    <div class="pick">${selectedChips}${otherChips}</div>
     <div class="add-row">
       <button class="chip add" data-action="dlg-guest">${icon('plus', 'xs')} Gast</button>
       <button class="chip add" data-action="dlg-profile">${icon('plus', 'xs')} Neues Profil</button>
@@ -465,28 +458,31 @@ function viewX01(st) {
   const bot = isBotTurn(st);
   const sets = c.format === 'sets';
   const sub = `${sets ? `Set ${st.sides.reduce((a, s) => a + s.sets, 0) + 1} · ` : ''}Leg ${st.legNo}`;
-  const boards = st.sides.map((S, si) => {
-    const isAct = si === L.turn;
+  const actSide = L.turn;
+  const actRem = L.rem[actSide] - curScore(st);
+  const actOpened = L.opened[actSide] || L.cur.some(d => d.score > 0);
+  const route = actOpened ? checkoutRoute(actRem, 3 - L.cur.length, c.out) : null;
+
+  const rows = st.sides.map((S, si) => {
+    const isAct = si === actSide;
     const rem = L.rem[si] - (isAct ? curScore(st) : 0);
-    const dartsLeft = isAct ? 3 - L.cur.length : 3;
-    const route = L.opened[si] || (isAct && L.cur.some(d => d.score > 0)) ? checkoutRoute(rem, dartsLeft, c.out) : null;
     const mi = S.members[S.ptr];
     const ps = st.stats[mi];
     const color = st.players[S.members[0]].color;
-    const names = S.members.map((m, k) => `<span class="${k === S.ptr ? 'cur' : ''}">${st.players[m].kind === 'bot' ? icon('bot', 'xs') : ''}${esc(st.players[m].name)}</span>`).join('<span class="muted"> & </span>');
+    const names = S.members.map((m, k) => `<span class="${k === S.ptr ? 'cur' : ''}">${st.players[m].kind === 'bot' ? icon('bot', 'xs') : ''}${esc(st.players[m].name)}</span>`).join('<i>&</i>');
     const last = L.lastScores?.[si];
-    return `<div class="board ${isAct ? 'active' : ''}" style="--pc:${color}">
-      <div class="b-head"><span class="b-name">${names}</span>
-        <span class="b-legs">${sets ? `<span title="Sets">S ${S.sets}</span>` : ''}<span title="Legs">L ${S.legs}</span></span></div>
-      <div class="b-rem">${rem}</div>
-      <div class="b-route">${route ? route.map(t => `<span>${t.label}</span>`).join('') : !L.opened[si] ? '<span class="muted">Double In</span>' : '&nbsp;'}</div>
-      <div class="b-stats"><span>Ø ${f1(avg(ps.points, ps.darts))}</span><span>Darts ${L.sideDarts[si]}</span><span>Letzte ${last ?? '–'}</span></div>
+    return `<div class="sb-row ${isAct ? 'act' : ''}" style="--pc:${color}">
+      <div class="sb-name"><span class="sb-names">${names}</span>
+        <span class="sb-meta">Ø ${f1(avg(ps.points, ps.darts))} · ${L.sideDarts[si]} Darts${last != null ? ` · Letzte ${last}` : ''}${!L.opened[si] ? ' · Double In' : ''}</span></div>
+      ${sets ? `<div class="sb-box set">${S.sets}</div>` : ''}
+      <div class="sb-box">${S.legs}</div>
+      <div class="sb-score">${rem}</div>
     </div>`;
   }).join('');
 
   const player = st.players[act];
   const slots = [0, 1, 2].map(i => `<span class="slot ${L.cur[i] ? 'filled' : ''}">${L.cur[i] ? L.cur[i].label : ''}</span>`).join('');
-  const lastTxt = st.last ? `${esc(st.players[st.last.pi].name)}: ${st.last.labels ? st.last.labels.join(' · ') + ' = ' : ''}${st.last.bust ? '<b class="bad">Bust</b>' : `<b>${st.last.score}</b>`}` : 'Viel Erfolg!';
+  const lastTxt = st.last ? `${esc(st.players[st.last.pi].name)}: ${st.last.labels ? st.last.labels.join(' · ') + ' = ' : ''}${st.last.bust ? '<b class="bad">Bust</b>' : `<b>${st.last.score}</b>`}` : '';
 
   let pad;
   if (bot) pad = `<div class="pad bot-pad"><div class="bot-think">${icon('bot')}<b>${esc(player.name)}</b> wirft …</div><div class="slots">${slots}</div></div>`;
@@ -495,10 +491,16 @@ function viewX01(st) {
 
   return `<div class="game x01">
     ${gameBar(gameTitle(st), sub)}
-    <div class="boards n${Math.min(st.sides.length, 4)}">${boards}</div>
-    <div class="visit-bar"><span class="who">${dot(player.color)}<b>${esc(player.name)}</b> ist dran</span>
-      ${db.settings.inputMode === 'darts' || bot ? `<span class="slots">${slots}</span>` : ''}
-      <span class="last muted small">${lastTxt}</span></div>
+    <div class="scoreboard n${Math.min(st.sides.length, 5)}">
+      <div class="sb-legend"><span></span>${sets ? '<span>Sets</span>' : ''}<span>Legs</span><span></span></div>
+      ${rows}
+    </div>
+    <div class="sb-info">
+      <div class="sb-turn">${dot(player.color)}<b>${esc(player.name)}</b><span>am Wurf</span>
+        ${db.settings.inputMode === 'darts' || bot ? `<span class="slots">${slots}</span>` : ''}</div>
+      <div class="sb-route">${route ? route.map(t => `<span>${t.label}</span>`).join('') : ''}</div>
+      ${lastTxt ? `<div class="sb-last">${lastTxt}</div>` : ''}
+    </div>
     ${pad}
   </div>`;
 }
@@ -555,15 +557,16 @@ function viewTraining(st) {
       case 'doubles': main = pct(q.hits, q.darts); sub = `${q.hits}/${q.darts} · ${q.done ? 'fertig' : `${q.idx + 1}/${st.targets.length}`}`; break;
       case 'c121': main = q.success; sub = q.done ? 'fertig' : `Ziel ${q.target} · Versuch ${q.attempt + 1}/${st.config.attempts}`; break;
     }
-    return `<div class="trow ${i === st.turn && !st.finished ? 'active' : ''} ${q.done ? 'done' : ''}" style="--pc:${x.color}">
-      ${dot(x.color)}<span class="grow"><b>${esc(x.name)}</b><span class="muted small">${sub}</span></span><span class="tmain">${main}</span></div>`;
+    return `<div class="sb-row ${i === st.turn && !st.finished ? 'act' : ''} ${q.done ? 'done' : ''}" style="--pc:${x.color}">
+      <div class="sb-name"><span class="sb-names"><span class="cur">${esc(x.name)}</span></span><span class="sb-meta">${sub}</span></div>
+      <div class="sb-score sm">${main}</div></div>`;
   }).join('');
 
   let focus = '', pad = '';
   switch (st.type) {
     case 'atc': {
       const t = st.targets[p.idx];
-      focus = `<div class="focus-label">Ziel</div><div class="focus-big">${targetLabel(st, t)}</div><div class="muted">${p.idx + 1} / ${st.targets.length}</div>`;
+      focus = focusPanel('Ziel', targetLabel(st, t), `${p.idx + 1} / ${st.targets.length}`);
       pad = st.config.jumps
         ? hitButtons([[0, 'Daneben', 'miss'], [1, 'Single'], [2, 'Double'], [3, 'Triple']])
         : hitButtons([[0, 'Daneben', 'miss'], [1, 'Treffer', 'hit']]);
@@ -571,24 +574,24 @@ function viewTraining(st) {
     }
     case 'bobs27': {
       const t = st.targets[p.idx];
-      focus = `<div class="focus-label">Ziel · Runde ${p.idx + 1}/21</div><div class="focus-big">${dlabel(t)}</div><div class="muted">Punkte: <b>${p.score}</b> · Wert ${t === 25 ? 50 : t * 2}</div>`;
+      focus = focusPanel(`Runde ${p.idx + 1}/21`, dlabel(t), `Punkte <b>${p.score}</b> · Wert ${t === 25 ? 50 : t * 2}`);
       pad = hitButtons([[0, '0', 'miss'], [1, '1'], [2, '2'], [3, '3']], 'Treffer');
       break;
     }
     case 'power':
-      focus = `<div class="focus-label">Aufnahme</div><div class="focus-big">${p.n + 1}<small>/${st.config.rounds}</small></div><div class="muted">Gesamt <b>${p.total}</b> · Ø ${f1(p.n ? p.total / p.n : 0)}</div>`;
+      focus = focusPanel('Aufnahme', `${p.n + 1}<small>/${st.config.rounds}</small>`, `Gesamt <b>${p.total}</b> · Ø ${f1(p.n ? p.total / p.n : 0)}`);
       pad = keypad([60, 81, 85, 100, 140, 180].map(v => ({ v, label: String(v) })));
       break;
     case 'doubles': {
       const t = st.targets[p.idx];
-      focus = `<div class="focus-label">Ziel · ${p.idx + 1}/${st.targets.length}</div><div class="focus-big">${dlabel(t)}</div><div class="muted">Quote ${pct(p.hits, p.darts)}</div>`;
+      focus = focusPanel(`Ziel ${p.idx + 1}/${st.targets.length}`, dlabel(t), `Quote ${pct(p.hits, p.darts)}`);
       pad = hitButtons([[0, '0', 'miss'], [1, '1'], [2, '2'], [3, '3']], 'Treffer (3 Darts)');
       break;
     }
     case 'c121': {
       const route = checkoutRoute(p.rem, 3, 'double');
-      focus = `<div class="focus-label">Ziel ${p.target} · Aufnahme ${p.visit + 1}/3</div><div class="focus-big">${p.rem}</div>
-        <div class="b-route center">${route ? route.map(t => `<span>${t.label}</span>`).join('') : '&nbsp;'}</div>`;
+      focus = focusPanel(`Ziel ${p.target} · Aufnahme ${p.visit + 1}/3`, p.rem,
+        `<span class="sb-route inline">${route ? route.map(t => `<span>${t.label}</span>`).join('') : ''}</span>`);
       pad = keypad(route ? [{ v: p.rem, label: `Check ${p.rem}`, cls: 'accent' }] : []);
       break;
     }
@@ -596,12 +599,17 @@ function viewTraining(st) {
   const slots = st.type === 'atc' ? `<span class="slots">${[0, 1, 2].map(i => `<span class="slot ${st.cur[i] != null ? (st.cur[i] > 0 ? 'filled hit' : 'filled') : ''}">${st.cur[i] != null ? (st.cur[i] > 0 ? '✔' : '✕') : ''}</span>`).join('')}</span>` : '';
   return `<div class="game training">
     ${gameBar(variantOf(st.type, st.config).label, st.players.length > 1 ? `Runde ${st.round}` : '')}
-    <div class="tboards">${rows}</div>
-    <div class="focus card" style="--pc:${pl.color}">${st.players.length > 1 ? `<div class="who">${dot(pl.color)}<b>${esc(pl.name)}</b></div>` : ''}${focus}</div>
-    <div class="visit-bar">${slots}<span class="last muted small">${st.last ? `<span class="${st.last.good ? 'good' : ''}">${esc(st.last.text)}</span>` : 'Viel Erfolg!'}</span></div>
+    <div class="scoreboard n${Math.min(st.players.length, 5)}">${rows}</div>
+    <div class="focus" style="--pc:${pl.color}">
+      ${st.players.length > 1 ? `<div class="focus-who">${dot(pl.color)}<b>${esc(pl.name)}</b> am Wurf</div>` : ''}
+      ${focus}
+      <div class="focus-foot">${slots}<span class="sb-last">${st.last ? `<span class="${st.last.good ? 'good' : ''}">${esc(st.last.text)}</span>` : ''}</span></div>
+    </div>
     ${pad}
   </div>`;
 }
+
+const focusPanel = (label, big, sub) => `<div class="focus-label">${label}</div><div class="focus-big">${big}</div><div class="focus-sub">${sub}</div>`;
 
 function targetLabel(st, t) {
   if (t == null) return '✔';
@@ -879,7 +887,7 @@ const CHART_COLORS = {
   dark: { avg: '#ef233c', f9: '#3987e5', ramp: ['#a3263a', '#dc2a44', '#ff7a88'] },
   light: { avg: '#dc1f36', f9: '#2a78d6', ramp: ['#ec7d8a', '#d63046', '#8f0d20'] },
 };
-const pal = () => CHART_COLORS[db.settings.theme] || CHART_COLORS.dark;
+const pal = () => CHART_COLORS.dark;
 
 const rangeBar = () => `<div class="filter-row"><div class="seg">${RANGES.map(([v, l]) =>
   `<button class="${ui.range === v ? 'on' : ''}" data-action="range" data-v="${v}">${l}</button>`).join('')}</div></div>`;
@@ -900,7 +908,7 @@ const axisNum = (v, axis) => (axis ? f0(v) : f1(v));
 
 function multiWidth() {
   const page = Math.min(window.innerWidth, 920) - 32;
-  return window.innerWidth >= 640 ? Math.floor((page - 10) / 2) - 34 : page - 34;
+  return Math.max(220, window.innerWidth >= 640 ? Math.floor((page - 10) / 2) - 34 : page - 34);
 }
 
 function playerCharts(pid) {
@@ -1027,7 +1035,6 @@ function viewSettings() {
     <div class="opt"><label>X01-Eingabe</label>${seg('inputMode', [['total', 'Gesamtpunkte'], ['darts', 'Einzeldarts']])}
       <p class="muted small">Auch im Spiel über das Symbol oben rechts umschaltbar.</p></div>
     <div class="opt"><label>Sprachansage (Scores, Game Shot)</label>${seg('speech', [[false, 'Aus'], [true, 'An']])}</div>
-    <div class="opt"><label>Design</label>${seg('theme', [['dark', 'Dunkel'], ['light', 'Hell']])}</div>
   </section>
   ${syncCard()}
   <section class="card">
