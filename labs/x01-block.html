@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testseite · X01-Block kompakter</title>
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  body { padding: 18px 14px 60px; }
+  .wrap { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 26px; }
+  .intro { color: var(--muted); max-width: 780px; margin: 0; }
+  .variant { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .variant > h2 { font-size: 1.8rem; font-weight: 900; font-style: italic; }
+  .variant > h2 span { color: var(--red); margin-right: 8px; }
+  .variant > p { margin: 0; color: var(--muted); font-size: .88rem; max-width: 760px; }
+  .frames { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+  .frame { container-type: inline-size; border: 1px dashed #3a2a30; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+  .frame.m { width: 384px; }
+  .frame.d { flex: 1; min-width: 520px; max-width: 900px; }
+  .frame small.cap { color: #6d5d63; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; }
+  .ico.s { width: 18px; height: 18px; }
+
+  /* ---------- B: Eine Zeile ---------- */
+  .b-row { display: flex; gap: 8px; align-items: stretch; }
+  .b-scores { display: flex; flex-direction: column; gap: 3px; }
+  .b-scores button { flex: 1; min-width: 64px; border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-size: 1.15rem; font-weight: 900; font-style: italic; color: var(--muted); transform: skewX(-10deg); padding: 2px 8px; }
+  .b-scores button.on { background: linear-gradient(100deg, var(--red), var(--red-2)); color: #fff; border-color: var(--red); }
+  .b-modes { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .b-modes button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--line); border-top: 3px solid var(--red); background: var(--panel); padding: 8px 4px; font-family: var(--display); font-weight: 800; font-size: 1rem; text-transform: uppercase; }
+  .b-modes .ico { color: var(--red); }
+
+  /* ---------- C: Punkte im Kopf, Modi als Leiste ---------- */
+  .c-head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--line); position: relative; }
+  .c-head::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 64px; height: 2px; background: var(--red); }
+  .c-head h2 { font-size: 2rem; font-weight: 900; font-style: italic; }
+  .c-pick { display: flex; gap: 4px; margin-left: auto; }
+  .c-pick button { border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-weight: 900; font-style: italic; font-size: 1.1rem; color: var(--muted); padding: 3px 12px; transform: skewX(-10deg); }
+  .c-pick button.on { background: var(--red); color: #fff; border-color: var(--red); }
+  .c-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); }
+  .c-modes button { display: flex; align-items: center; justify-content: center; gap: 7px; height: 52px; background: var(--panel); border: 0; border-left: 1px solid var(--line); font-family: var(--display); font-weight: 800; font-size: 1.1rem; text-transform: uppercase; }
+  .c-modes button:first-child { border-left: 0; }
+  .c-modes .ico { color: var(--red); }
+  .c-modes button:hover { background: var(--panel-2); }
+  @container (max-width: 420px) {
+    .c-modes button { flex-direction: column; gap: 2px; font-size: .95rem; height: 58px; }
+  }
+
+  /* ---------- D: Start-Buttons mit Punktwahl ---------- */
+  .d-card { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--red); padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .d-top { display: flex; align-items: center; gap: 10px; }
+  .d-top b { font-family: var(--display); font-size: 1.7rem; font-weight: 900; font-style: italic; text-transform: uppercase; }
+  .d-dial { margin-left: auto; display: flex; align-items: center; background: #000; border: 1px solid var(--line); }
+  .d-dial button { border: 0; background: none; color: var(--muted); font-size: 1.3rem; width: 34px; height: 38px; }
+  .d-dial span { font-family: var(--display); font-size: 1.6rem; font-weight: 900; font-style: italic; min-width: 58px; text-align: center; }
+  .d-modes { display: flex; gap: 6px; flex-wrap: wrap; }
+  .d-modes button { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 42px; padding: 0 8px; border: 1px solid var(--line); background: var(--panel-2); font-family: var(--display); font-weight: 800; font-size: 1.05rem; text-transform: uppercase; transform: skewX(-8deg); }
+  .d-modes .ico { color: var(--red); }
+  @container (max-width: 420px) {
+    .d-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* ---------- E: Ein Streifen wie die Trainings ---------- */
+  .e-strip { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 14px; background: var(--panel); border-left: 5px solid var(--red); transform: skewX(-6deg); }
+  .e-strip > * { transform: skewX(6deg); }
+  .e-left { display: flex; flex-direction: column; }
+  .e-left b { font-family: var(--display); font-size: 2.1rem; font-weight: 900; font-style: italic; color: var(--red); line-height: 1; }
+  .e-left .e-pick { display: flex; gap: 6px; margin-top: 4px; }
+  .e-left .e-pick button { border: 0; background: none; padding: 0; font-family: var(--display); font-weight: 800; font-size: .95rem; color: var(--muted); }
+  .e-left .e-pick button.on { color: #fff; text-decoration: underline; text-decoration-color: var(--red); text-decoration-thickness: 3px; text-underline-offset: 3px; }
+  .e-icons { margin-left: auto; display: flex; gap: 6px; }
+  .e-icons button { width: 54px; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1px solid var(--line); background: var(--panel-2); font-family: var(--display); font-weight: 700; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .e-icons .ico { color: #fff; width: 22px; height: 22px; }
+  .e-icons button:hover { border-color: var(--red); }
+
+  /* ---------- F: Kompakte Kacheln ---------- */
+  .f-scores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0 4px; }
+  .f-scores button { height: 42px; border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-size: 1.6rem; font-weight: 900; font-style: italic; color: var(--muted); transform: skewX(-10deg); }
+  .f-scores button.on { background: linear-gradient(100deg, var(--red), var(--red-2)); color: #fff; border-color: var(--red); }
+  .f-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .f-modes button { display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 10px; border: 1px solid var(--line); border-left: 4px solid var(--red); background: var(--panel); font-family: var(--display); font-weight: 800; font-size: 1.15rem; text-transform: uppercase; }
+  .f-modes .ico { color: var(--red); }
+  @container (max-width: 420px) {
+    .f-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Testseite</div>
+    <h1 style="font-size:2.6rem;font-weight:900;font-style:italic">X01-Block kompakter</h1>
+    <p class="intro">Fünf Vorschläge, wie der X01-Bereich auf der Startseite weniger Platz braucht. Jede Variante links in Handybreite, rechts in Desktopbreite. Die Punktauswahl ist klickbar. Zum Vergleich ganz oben die aktuelle Version.</p>
+  </header>
+  <div id="variants"></div>
+</div>
+
+<script type="module">
+const svg = d => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const I = {
+  user: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'),
+  users: svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.6 5.4"/>'),
+  bot: svg('<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13v2M15 13v2"/>'),
+  team: svg('<circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M2.5 18c.5-2.7 2.2-4.2 4.5-4.2s4 1.5 4.5 4.2M12.5 18c.5-2.7 2.2-4.2 4.5-4.2s4 1.5 4.5 4.2"/>'),
+  info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/>'),
+};
+const MODES = [['user', 'Solo', 'allein üben'], ['users', 'Gegner', 'mit Freunden'], ['bot', 'Dartbot', 'Stufe 5'], ['team', 'Doppel', 'Team gegen Team']];
+const SCORES = [301, 501, 701];
+const head = (extra = '') => `<div class="block-head"><h2>X01 <em>Match</em></h2>${extra || `<button class="icon-btn info-btn">${I.info}</button>`}</div>`;
+const pick = (cls, fmt = v => v) => SCORES.map(v => `<button class="${v === 501 ? 'on' : ''}" data-pick>${fmt(v)}</button>`).join('');
+
+const V = [
+  ['A', 'Aktuell', 'Zum Vergleich: große Punktauswahl, darunter vier Kacheln mit Untertitel – ca. 220 px hoch.', () => `
+    ${head()}
+    <div class="score-pick">${pick()}</div>
+    <div class="mode-grid">${MODES.map(([i, l, s]) => `<button class="mode-tile">${I[i]}<b>${l}</b><span>${s}</span></button>`).join('')}</div>`],
+
+  ['B', 'Eine Zeile', 'Punkte als kleine Stapel links, die vier Spielarten als Symbol-Buttons rechts daneben – alles in einer Reihe, ca. 90 px hoch.', () => `
+    ${head()}
+    <div class="b-row"><div class="b-scores">${pick()}</div>
+      <div class="b-modes">${MODES.map(([i, l]) => `<button>${I[i]}${l}</button>`).join('')}</div></div>`],
+
+  ['C', 'Punkte im Titel', 'Die Punktauswahl wandert als kleine Schalter in die Überschrift, darunter eine schmale Leiste mit den vier Spielarten – ca. 110 px hoch.', () => `
+    <div class="c-head"><h2>X01 <em style="color:var(--red)">Match</em></h2><div class="c-pick">${pick()}</div></div>
+    <div class="c-modes">${MODES.map(([i, l]) => `<button>${I[i]}<span>${l}</span></button>`).join('')}</div>`],
+
+  ['D', 'Karte mit Drehregler', 'Eine Karte: oben „X01“ und ein Regler ‹ 501 ›, darunter vier schräge Start-Buttons – ca. 110 px hoch, kein extra Titelbalken.', () => `
+    <div class="d-card"><div class="d-top"><b>X01 Match</b><div class="d-dial"><button data-dial="-1">‹</button><span data-dial-value>501</span><button data-dial="1">›</button></div></div>
+      <div class="d-modes">${MODES.map(([i, l]) => `<button>${I[i]}${l}</button>`).join('')}</div></div>`],
+
+  ['E', 'Streifen wie Training', 'X01 sieht aus wie die Trainings-Streifen: links „X01“ mit Punktwahl als Text, rechts vier kleine Symbol-Kacheln – ca. 80 px hoch, sehr einheitlich mit dem Rest.', () => `
+    <div class="e-strip"><div class="e-left"><b>X01</b><div class="e-pick">${pick()}</div></div>
+      <div class="e-icons">${MODES.map(([i, l]) => `<button title="${l}">${I[i]}${l}</button>`).join('')}</div></div>`],
+
+  ['F', 'Kompakte Kacheln', 'Wie jetzt, nur flacher: schmalere Punktauswahl, Kacheln ohne Untertitel mit Symbol neben dem Text – ca. 150 px hoch, am nächsten am bisherigen Look.', () => `
+    ${head()}
+    <div class="f-scores">${pick()}</div>
+    <div class="f-modes">${MODES.map(([i, l]) => `<button>${I[i]}${l}</button>`).join('')}</div>`],
+];
+
+document.getElementById('variants').innerHTML = V.map(([n, t, d, html]) => `
+  <section class="variant"><h2><span>${n}</span>${t}</h2><p>${d}</p>
+    <div class="frames">
+      <div class="frame m"><small class="cap">Handy</small>${html()}</div>
+      <div class="frame d"><small class="cap">Desktop</small>${html()}</div>
+    </div></section>`).join('');
+
+// Punktauswahl klickbar (pro Rahmen)
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-pick]');
+  if (b) { b.parentElement.querySelectorAll('[data-pick]').forEach(x => x.classList.toggle('on', x === b)); return; }
+  const d = e.target.closest('[data-dial]');
+  if (d) {
+    const val = d.parentElement.querySelector('[data-dial-value]');
+    const i = (SCORES.indexOf(+val.textContent) + +d.dataset.dial + SCORES.length) % SCORES.length;
+    val.textContent = SCORES[i];
+  }
+});
+</script>
+</body>
+</html>
