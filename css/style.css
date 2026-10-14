@@ -808,3 +808,10 @@ body.in-game { overflow: hidden; }
   .title-pick button { padding: 3px 10px; font-size: 1.05rem; }
   .block-head h2 { font-size: 1.8rem; }
 }
+
+/* ---------- Startseite: mehr Luft und kräftigere Trennlinien ---------- */
+.page > section.block, .page > .resume-card { margin-top: 14px; }
+.page > .hero + section.block { margin-top: 6px; }
+section.block { gap: 14px; }
+.block-head { padding-bottom: 10px; border-bottom-width: 3px; }
+.block-head::after { width: 90px; height: 4px; bottom: -3px; transform: skewX(-30deg); transform-origin: left; }
