@@ -815,3 +815,11 @@ body.in-game { overflow: hidden; }
 section.block { gap: 14px; }
 .block-head { padding-bottom: 10px; border-bottom-width: 3px; }
 .block-head::after { width: 90px; height: 4px; bottom: -3px; transform: skewX(-30deg); transform-origin: left; }
+
+.fav-slots { display: flex; gap: 4px; }
+.fav-slots i { width: 16px; height: 8px; background: var(--panel-3); border: 1px solid var(--line); transform: skewX(-25deg); }
+.fav-slots i.on { background: var(--gold); border-color: var(--gold); }
+.fav-free { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 72px; padding: 10px 14px; border: 1px dashed var(--line); color: var(--muted); }
+.fav-free b { font-family: var(--display); font-size: 1.2rem; font-weight: 800; font-style: italic; text-transform: uppercase; color: #6f5f65; }
+.fav-free span { font-size: .75rem; }
+@media (max-width: 700px) { .fav-free { min-height: 0; flex-direction: row; align-items: baseline; gap: 10px; } }

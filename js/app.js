@@ -257,9 +257,9 @@ function viewHome() {
     <h1 class="hero-title">Game<span>On.</span></h1>
   </header>
 
-  ${favoritesBlock()}
-
   ${cur ? resumeCard(cur) : ''}
+
+  ${favoritesBlock()}
 
   <section class="block">
     <div class="block-head"><h2>X01 <em>Match</em></h2>
@@ -352,7 +352,7 @@ const favPlayers = f => {
 function favoritesBlock() {
   const list = favs();
   return `<section class="block">
-    <div class="block-head"><h2>Favoriten</h2><span class="muted small">${list.length}/${MAX_FAVS}</span></div>
+    <div class="block-head"><h2>Favoriten</h2><span class="fav-slots" role="img" aria-label="${list.length} von ${MAX_FAVS} Favoriten belegt">${Array.from({ length: MAX_FAVS }, (_, i) => `<i class="${i < list.length ? 'on' : ''}"></i>`).join('')}</span></div>
     ${list.length ? `<div class="fav-grid">${list.map(f => {
       const t = favTitle(f);
       return `<div class="fav-tile">
@@ -363,7 +363,7 @@ function favoritesBlock() {
         </button>
         <button class="icon-btn sm fav-del" data-action="fav-del" data-id="${f.id}" aria-label="Favorit entfernen" title="Favorit entfernen">${icon('x')}</button>
       </div>`;
-    }).join('')}</div>`
+    }).join('')}${'<div class="fav-free"><b>+ frei</b><span>Einrichtung öffnen und „Merken“ tippen</span></div>'.repeat(MAX_FAVS - list.length)}</div>`
       : `<div class="fav-empty">${icon('star')}<span>Richte ein Spiel ein und tippe oben auf <b>„Merken“</b> – dann startest du es hier mit einem Tipp. Bis zu ${MAX_FAVS} Favoriten.</span></div>`}
   </section>`;
 }
