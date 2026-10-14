@@ -12,6 +12,7 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
   - Legs oder Sets (First to …)
   - Checkout-Vorschläge nach Profi-Tabelle als TV-Banner (ein Feld pro Dart)
   - Ausbullen, wer das Match beginnt
+  - Lieblingsdoppel pro Spieler (automatisch aus den meisten Treffern oder fest eingestellt) fließt in die Checkout-Wege ein
   - Eingabe als Gesamtpunktzahl (Ziffernblock + Schnelltasten) oder Dart für Dart
 - **Allein, gegeneinander (bis 8 Spieler), im Doppel (Teams, z. B. 2 vs 2) oder gegen den Dartbot**
 - **Dartbot** in 10 Stufen (ca. Ø 25 bis Ø 100), simuliert echte Streuung auf dem Board

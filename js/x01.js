@@ -9,7 +9,7 @@ export function validTotal(s) {
 }
 
 function emptyStats() {
-  return { darts: 0, points: 0, f9d: 0, f9p: 0, s180: 0, s140: 0, s100: 0, high: 0, highCo: 0, coDone: 0, coAtt: 0, legsWon: 0, bestLeg: null };
+  return { darts: 0, points: 0, f9d: 0, f9p: 0, s180: 0, s140: 0, s100: 0, high: 0, highCo: 0, coDone: 0, coAtt: 0, legsWon: 0, bestLeg: null, dbl: {} };
 }
 
 /**
@@ -48,8 +48,11 @@ export function curScore(st) {
   return st.leg.cur.reduce((a, d) => a + d.score, 0);
 }
 
-/** Aufnahme abschließen. score = gezählte Punkte, darts = geworfene Darts. */
-function commit(st, score, darts, bust, labels) {
+/**
+ * Aufnahme abschließen. score = gezählte Punkte, darts = geworfene Darts.
+ * finish = Doppel (Zahl, 25 = Bull), mit dem gecheckt wurde – nur wenn eindeutig bekannt.
+ */
+function commit(st, score, darts, bust, labels, finish = null) {
   const L = st.leg, side = L.turn, S = st.sides[side], pi = S.members[S.ptr], ps = st.stats[pi];
   const out = st.config.out;
   const before = L.rem[side];
@@ -80,6 +83,10 @@ function commit(st, score, darts, bust, labels) {
   if (checkout) {
     ps.coDone++;
     ps.highCo = Math.max(ps.highCo, before);
+    if (finish && out === 'double') {
+      ps.dbl = ps.dbl || {};
+      ps.dbl[finish] = (ps.dbl[finish] || 0) + 1;
+    }
     finishLeg(st, side);
   } else {
     L.turn = (side + 1) % st.sides.length;
@@ -122,7 +129,10 @@ function endMatch(st, side) {
 
 /** Eingabe als Gesamtpunktzahl einer Aufnahme. */
 export function submitTotal(st, score, darts = 3) {
-  return commit(st, score, darts, false, null);
+  // Checkout mit genau einem Dart: das getroffene Doppel ist eindeutig (z. B. Rest 32 → D16)
+  const before = st.leg.rem[st.leg.turn];
+  const single = darts === 1 && score === before && (before === 50 || (before <= 40 && before % 2 === 0));
+  return commit(st, score, darts, false, null, single ? (before === 50 ? 25 : before / 2) : null);
 }
 
 /** Eingabe Dart für Dart. Gibt die Aufnahme zurück, sobald sie abgeschlossen ist. */
@@ -139,7 +149,8 @@ export function throwDart(st, t) {
   if (after < 0 || (after === 1 && out !== 'single') || (after === 0 && !finishOk(t, out))) {
     return commit(st, total, n, true, labels);
   }
-  if (after === 0 || n === 3) return commit(st, total, n, false, labels);
+  if (after === 0) return commit(st, total, n, false, labels, t.m === 2 ? t.n : null);
+  if (n === 3) return commit(st, total, n, false, labels);
   return null;
 }
 

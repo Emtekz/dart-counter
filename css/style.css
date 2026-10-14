@@ -708,3 +708,11 @@ body.in-game { overflow: hidden; }
 .co-banner .co-d.next { background: linear-gradient(180deg, rgba(255, 194, 61, .2), transparent); }
 .co-banner .co-d.done b { color: #6b5f47; font-size: 1.5rem; }
 .co-banner .co-d.empty b { color: #2c261c; }
+
+/* ---------- Lieblingsdoppel ---------- */
+.fav-badge { font-family: var(--display); font-weight: 900; font-style: italic; font-size: 1.4rem; background: var(--gold); color: #1a1200; padding: 0 12px; transform: skewX(-10deg); }
+.dbl-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.dbl-item { display: flex; flex-direction: column; padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--line); border-left: 3px solid var(--line); }
+.dbl-item.on { border-left-color: var(--gold); }
+.dbl-item b { font-family: var(--display); font-size: 1.5rem; font-weight: 900; font-style: italic; line-height: 1; }
+.dbl-item span { font-size: .78rem; color: var(--muted); }

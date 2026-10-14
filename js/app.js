@@ -3,7 +3,7 @@ import { newX01, submitTotal, throwDart, activeIndex, curScore, x01Results, vali
 import { newTraining, trainingInput, trainingResults, variantOf, dlabel, pct } from './training.js';
 import { checkoutRoute, minDarts, throwOf } from './checkout.js';
 import { chooseTarget, throwAt, BOT_LEVELS } from './bot.js';
-import { x01Agg, trainingAgg, gamesOf, trainingBoards, rangeStart, x01Matches, trainingHistory, bucketUnit, bucketRange, groupBy } from './stats.js';
+import { x01Agg, trainingAgg, gamesOf, trainingBoards, rangeStart, x01Matches, trainingHistory, bucketUnit, bucketRange, groupBy, doubleStats, favouriteDouble, FAV_MIN_HITS } from './stats.js';
 import { lineChart, barChart, resetCharts, chartWidth } from './charts.js';
 import { sync, initSync, signIn, signOut, statusText } from './sync.js';
 import { rulesHtml } from './rules.js';
@@ -556,7 +556,8 @@ function viewX01(st) {
   const actSide = L.turn;
   const actRem = L.rem[actSide] - curScore(st);
   const actOpened = L.opened[actSide] || L.cur.some(d => d.score > 0);
-  const route = actOpened ? checkoutRoute(actRem, 3 - L.cur.length, c.out) : null;
+  const fav = favouriteDouble(getPlayer(st.players[act].playerId));
+  const route = actOpened ? checkoutRoute(actRem, 3 - L.cur.length, c.out, fav) : null;
 
   const rows = st.sides.map((S, si) => {
     const isAct = si === actSide;
@@ -952,6 +953,27 @@ function viewPlayers() {
   }).join('')}</div>` : '<p class="muted center">Noch keine Spieler angelegt.</p>'}`;
 }
 
+function favDoubleCard(p) {
+  const stats = doubleStats(p.id);
+  const auto = stats[0] && stats[0].hits >= FAV_MIN_HITS ? stats[0] : null;
+  const current = favouriteDouble(p);
+  const dl = n => (n === 25 ? 'Bull' : 'D' + n);
+  const status = p.favDouble
+    ? `Fest eingestellt: <b>${dl(p.favDouble)}</b>`
+    : auto ? `Automatisch: <b>${dl(auto.n)}</b> · ${auto.hits} Treffer`
+    : `Automatisch – noch zu wenige Daten (ab ${FAV_MIN_HITS} Treffern auf einem Doppel). Bis dahin gelten die Standardwege.`;
+  const choices = [[0, 'Automatisch'], [20, 'D20'], [16, 'D16'], [18, 'D18'], [12, 'D12'], [10, 'D10'], [8, 'D8'], [25, 'Bull']];
+  const extra = p.favDouble && !choices.some(([v]) => v === p.favDouble) ? [[p.favDouble, dl(p.favDouble)]] : [];
+  return `<section class="card">
+    <div class="row between"><h3>Lieblingsdoppel</h3>${current ? `<span class="fav-badge">${dl(current)}</span>` : ''}</div>
+    <p class="muted small">${status} Das Checkout-Banner bevorzugt Wege über dieses Doppel, wenn es einen gleich kurzen gibt.</p>
+    <div class="seg wrap">${[...choices, ...extra].map(([v, l]) => `<button class="${(p.favDouble || 0) === v ? 'on' : ''}" data-action="player-fav" data-id="${p.id}" data-v="${v}">${l}</button>`).join('')}</div>
+    ${stats.length ? `<div class="label">Deine Doppel-Treffer</div>
+      <div class="dbl-list">${stats.slice(0, 8).map((s, i) => `<div class="dbl-item ${current === s.n ? 'on' : ''}"><b>${dl(s.n)}</b><span>${s.hits} Treffer${s.att ? ` · ${Math.round((s.hits / s.att) * 100)} %` : ''}</span></div>`).join('')}</div>
+      <p class="muted small">Gezählt werden Checkouts im X01 (bei Gesamtpunkte-Eingabe nur eindeutige 1-Dart-Checkouts) sowie Doppeltraining und Bob's 27 (dort auch mit Quote).</p>` : ''}
+  </section>`;
+}
+
 function viewPlayer(id) {
   const p = getPlayer(id);
   if (!p) return `${pageHead('Spieler', '#/players')}<p class="muted">Spieler nicht gefunden.</p>`;
@@ -968,6 +990,8 @@ function viewPlayer(id) {
     <h3>Farbe</h3>
     <div class="swatches">${COLORS.map(c => `<button class="swatch ${c === p.color ? 'on' : ''}" style="--c:${c}" data-action="player-color" data-id="${id}" data-c="${c}" aria-label="Farbe ${c}"></button>`).join('')}</div>
   </section>
+
+  ${favDoubleCard(p)}
 
   <h3 class="section-title">X01</h3>
   ${a.games ? `<div class="stat-grid">
@@ -1350,6 +1374,7 @@ const actions = {
       }],
     });
   },
+  'player-fav': d => { getPlayer(d.id).favDouble = +d.v || null; save(); render(); },
   'player-icon': d => { getPlayer(d.id).icon = d.icon || null; save(); render(); },
   'player-color': d => { getPlayer(d.id).color = d.c; save(); render(); },
   'delete-player': d => confirmBox('Spieler löschen?', 'Das Profil wird entfernt. Gespielte Spiele bleiben in der Historie erhalten.', 'Löschen', () => {

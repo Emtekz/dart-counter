@@ -14,7 +14,7 @@ export function newTraining(type, config, players) {
     st.ps = players.map(() => ({ idx: 0, darts: 0, hits: 0, done: false }));
   } else if (type === 'bobs27') {
     st.targets = ALL_DOUBLES;
-    st.ps = players.map(() => ({ score: 27, idx: 0, hits: 0, darts: 0, done: false, out: false }));
+    st.ps = players.map(() => ({ score: 27, idx: 0, hits: 0, darts: 0, done: false, out: false, per: {} }));
   } else if (type === 'power') {
     st.ps = players.map(() => ({ total: 0, n: 0, high: 0, visits: [], done: false }));
   } else if (type === 'doubles') {
@@ -74,6 +74,9 @@ export function trainingInput(st, val) {
       const v = t === 25 ? 50 : t * 2;
       p.darts += 3;
       p.hits += val;
+      const pt = (p.per[t] = p.per[t] || [0, 0]);
+      pt[0] += val;
+      pt[1] += 3;
       const delta = val === 0 ? -v : val * v;
       p.score += delta;
       p.idx++;
@@ -159,6 +162,13 @@ export function trainingResults(st) {
       case 'c121': return { metric: p.success, better: 'high', unit: 'Checks', detail: `Höchstes Ziel ${p.best || '–'} · ${p.attempt} Versuche`, best: p.best };
     }
   });
+  if (st.type === 'doubles' || st.type === 'bobs27') {
+    res.forEach((r, i) => {
+      const per = st.ps[i].per || {};
+      r.dbl = Object.fromEntries(Object.entries(per).map(([k, v]) => [k, v[0]]));
+      r.dblAtt = Object.fromEntries(Object.entries(per).map(([k, v]) => [k, v[1]]));
+    });
+  }
   const sorted = [...res.keys()].sort((a, b) => (res[a].better === 'low' ? res[a].metric - res[b].metric : res[b].metric - res[a].metric));
   sorted.forEach((idx, r) => (res[idx].rank = r + 1));
   return res;

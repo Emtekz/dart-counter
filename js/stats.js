@@ -145,3 +145,42 @@ export function groupBy(rows, unit) {
   }
   return m;
 }
+
+/* ---------- Lieblingsdoppel ---------- */
+
+export const FAV_MIN_HITS = 5;
+
+/** Treffer (und, wo bekannt, Versuche) pro Doppel eines Spielers – X01-Checkouts und Doppel-Trainings. */
+export function doubleStats(pid) {
+  const m = new Map();
+  const add = (n, hits, att) => {
+    const e = m.get(+n) || { n: +n, hits: 0, att: 0 };
+    e.hits += hits;
+    e.att += att;
+    m.set(+n, e);
+  };
+  for (const g of db.games) {
+    g.players.forEach((p, i) => {
+      if (p.playerId !== pid) return;
+      const r = g.results[i];
+      if (!r?.dbl) return;
+      for (const [n, h] of Object.entries(r.dbl)) add(n, h, r.dblAtt?.[n] || 0);
+    });
+  }
+  return [...m.values()].sort((a, b) => b.hits - a.hits || b.hits / (b.att || 1) - a.hits / (a.att || 1));
+}
+
+let favCache = { key: '', map: new Map() };
+
+/** Lieblingsdoppel: manuell festgelegt oder automatisch das Doppel mit den meisten Treffern (ab 5). */
+export function favouriteDouble(player) {
+  if (!player) return null;
+  if (player.favDouble) return player.favDouble;
+  const key = db.games.length + '|' + (db.games[db.games.length - 1]?.id || '');
+  if (favCache.key !== key) favCache = { key, map: new Map() };
+  if (!favCache.map.has(player.id)) {
+    const top = doubleStats(player.id)[0];
+    favCache.map.set(player.id, top && top.hits >= FAV_MIN_HITS ? top.n : null);
+  }
+  return favCache.map.get(player.id);
+}
