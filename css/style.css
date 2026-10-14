@@ -109,6 +109,9 @@ h4 { font-size: .95rem; margin-bottom: .6rem; }
     radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%),
     var(--surface);
 }
+.hero { position: relative; overflow: hidden; }
+.hero > :not(.hero-board) { position: relative; }
+.hero-board { position: absolute; right: -70px; top: 50%; width: 260px; transform: translateY(-50%) rotate(-9deg); opacity: .16; pointer-events: none; }
 .hero h2 { font-size: 1.35rem; margin-bottom: .3rem; }
 .hero p { margin: 0; max-width: 46ch; }
 @media (max-width: 600px) {

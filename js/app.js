@@ -222,7 +222,7 @@ function viewHome() {
   const recent = db.games.slice(-5).reverse();
   return `
   <header class="brand-head">
-    <img src="icon.svg" alt="" class="logo"><div><div class="brand">Dart Counter</div><div class="muted small">Zählen. Trainieren. Besser werden.</div></div>
+    <img src="icons/logo.png" alt="" class="logo"><div><div class="brand">Dart Counter</div><div class="muted small">Zählen. Trainieren. Besser werden.</div></div>
   </header>
 
   ${cur ? `<section class="card resume">
@@ -232,6 +232,7 @@ function viewHome() {
     </section>` : ''}
 
   <section class="hero card">
+    <img src="icons/icon-512.png" alt="" class="hero-board">
     <div>
       <h2>Bereit für den nächsten Wurf?</h2>
       <p class="muted">X01-Matches allein, mit Freunden, im Doppel oder gegen den Dartbot – plus Trainingsspiele mit Statistiken für jeden Spieler.</p>
