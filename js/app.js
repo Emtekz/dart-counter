@@ -247,9 +247,11 @@ function viewHome() {
     <h1 class="hero-title">Game<span>On.</span></h1>
   </header>
 
-  ${cur ? resumeCard(cur) : ''}
+  <div class="hero-band" aria-hidden="true"><span>Zählen</span><i></i><span>Trainieren</span><i></i><span>Besser werden</span></div>
 
   ${favoritesBlock()}
+
+  ${cur ? resumeCard(cur) : ''}
 
   <section class="block">
     <div class="block-head"><h2>X01 <em>Match</em></h2>
