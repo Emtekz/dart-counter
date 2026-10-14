@@ -8,7 +8,7 @@ import { lineChart, barChart, resetCharts, chartWidth } from './charts.js';
 import { sync, initSync, signIn, signOut, statusText } from './sync.js';
 import { rulesHtml } from './rules.js';
 import { AVATARS, avatar, avatarSvg } from './avatars.js';
-import { caller, englishVoices, onVoices } from './caller.js';
+import { caller, englishVoices, onVoices, warmUp } from './caller.js';
 
 /* ---------- Hilfsfunktionen ---------- */
 
@@ -1059,8 +1059,12 @@ function viewSettings() {
       <div class="row gap wrap"><select id="caller-voice" class="input grow">
         <option value="">Automatisch (natürlichste Stimme)</option>
         ${englishVoices().map(v => `<option value="${esc(v.voiceURI)}" ${db.settings.callerVoice === v.voiceURI ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}
-      </select><button class="btn" data-action="caller-test">Probehören</button></div>
-      <p class="muted small">Die Stimmen kommen vom Gerät. Am natürlichsten klingen Stimmen mit „Natural“, „Online“ oder „Google“ im Namen (z. B. in Edge oder Chrome); auf dem iPhone unter Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen eine „Erweitert“-Stimme laden.</p></div>` : ''}
+      </select><button class="btn" data-action="caller-test">Probehören</button></div></div>
+    <div class="opt"><label>Tonhöhe · <span class="muted">${f1(db.settings.callerPitch ?? 0.8)}</span></label>
+      <input type="range" id="caller-pitch" class="range" min="0.5" max="1.3" step="0.05" value="${db.settings.callerPitch ?? 0.8}"></div>
+    <div class="opt"><label>Tempo · <span class="muted">${f1(db.settings.callerRate ?? 1)}</span></label>
+      <input type="range" id="caller-rate" class="range" min="0.7" max="1.4" step="0.05" value="${db.settings.callerRate ?? 1}">
+      <p class="muted small">Tipp: Eine männliche britische Stimme klingt am ehesten nach Caller (z. B. „Ryan“, „George“, „Daniel“ oder „Google UK English Male“). Stimmen mit „Online“ oder „Google“ im Namen klingen natürlicher, laden aber übers Internet und kommen leicht verzögert – Stimmen ohne diesen Zusatz liegen auf dem Gerät und sind sofort da. Auf dem iPhone unter Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen eine „Erweitert“-Stimme (Englisch UK) laden.</p></div>` : ''}
   </section>
   ${syncCard()}
   <section class="card">
@@ -1260,6 +1264,7 @@ const actions = {
 };
 
 document.addEventListener('click', e => {
+  warmUp();
   const el = e.target.closest('[data-action]');
   if (!el || el.disabled) return;
   const fn = actions[el.dataset.action];
@@ -1281,6 +1286,12 @@ document.addEventListener('submit', e => {
 });
 
 document.addEventListener('change', e => {
+  if (e.target.id === 'caller-pitch' || e.target.id === 'caller-rate') {
+    db.settings[e.target.id === 'caller-pitch' ? 'callerPitch' : 'callerRate'] = +e.target.value;
+    save();
+    caller.test();
+    return render();
+  }
   if (e.target.id === 'caller-voice') { db.settings.callerVoice = e.target.value || null; save(); caller.test(); return; }
   if (e.target.id !== 'import-file') return;
   const file = e.target.files[0];

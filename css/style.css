@@ -659,3 +659,4 @@ body.in-game { overflow: hidden; }
 .pico { margin-right: 4px; }
 .pchip .pico { color: var(--c); opacity: 1; width: 18px; height: 18px; }
 .sb-names .pico { color: var(--pc); width: 1em; height: 1em; vertical-align: -.1em; }
+.range { width: 100%; accent-color: var(--red); height: 28px; }
