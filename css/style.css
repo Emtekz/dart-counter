@@ -642,3 +642,20 @@ body.in-game { overflow: hidden; }
 }
 
 .list-row .grow > b { font-family: var(--display); font-size: 1.3rem; font-weight: 800; text-transform: uppercase; line-height: 1.05; }
+
+/* ---------- Profil-Symbole ---------- */
+.avatar .ico { width: 62%; height: 62%; transform: skewX(8deg); }
+.page-head .avatar { width: 48px; height: 48px; font-size: 1.8rem; }
+.icon-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 6px; }
+.icon-pick button {
+  height: 50px; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 0; background: var(--panel-2); color: #fff;
+  font-family: var(--display); font-weight: 900; font-style: italic; font-size: 1.6rem;
+  transform: skewX(-8deg);
+}
+.icon-pick button .ico { width: 26px; height: 26px; transform: skewX(8deg); }
+.icon-pick button:hover { border-color: var(--c); }
+.icon-pick button.on { background: var(--c); border-color: var(--c); box-shadow: 0 0 0 2px #fff inset; }
+.pico { margin-right: 4px; }
+.pchip .pico { color: var(--c); opacity: 1; width: 18px; height: 18px; }
+.sb-names .pico { color: var(--pc); width: 1em; height: 1em; vertical-align: -.1em; }

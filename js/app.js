@@ -7,6 +7,8 @@ import { x01Agg, trainingAgg, gamesOf, trainingBoards, rangeStart, x01Matches, t
 import { lineChart, barChart, resetCharts, chartWidth } from './charts.js';
 import { sync, initSync, signIn, signOut, statusText } from './sync.js';
 import { rulesHtml } from './rules.js';
+import { AVATARS, avatar, avatarSvg } from './avatars.js';
+import { caller, englishVoices, onVoices } from './caller.js';
 
 /* ---------- Hilfsfunktionen ---------- */
 
@@ -171,14 +173,6 @@ function confirmBox(title, text, okLabel, onOk, danger = true) {
   openModal({ title, text, buttons: [{ label: 'Abbrechen', cls: 'ghost' }, { label: okLabel, cls: danger ? 'danger' : 'primary', fn: onOk }] });
 }
 
-function say(text) {
-  if (!db.settings.speech || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(String(text));
-  u.lang = 'de-DE';
-  u.rate = 1.05;
-  speechSynthesis.speak(u);
-}
 
 /* ---------- Rendering ---------- */
 
@@ -219,6 +213,12 @@ const pageHead = (title, back, extra = '') => `<header class="page-head">
   <h1>${title}</h1>${extra}</header>`;
 
 const dot = color => `<span class="dot" style="--c:${color}"></span>`;
+
+/** Kleines Profil-Symbol eines Spielers (leer, wenn keins gewählt ist). */
+const miniIcon = pid => {
+  const ic = pid && getPlayer(pid)?.icon;
+  return ic ? avatarSvg(ic).replace('class="ico"', 'class="ico xs pico"') : '';
+};
 
 /* ---------- Start (Spiel-Hub) ---------- */
 
@@ -280,7 +280,14 @@ function viewHome() {
 const infoBtn = type => `<button class="icon-btn info-btn" data-action="rules" data-type="${type}" aria-label="So funktioniert ${esc(GAMES[type].name)}" title="Regeln & Erklärung">${icon('info')}</button>`;
 
 function homeStart() {
-  return ui.homeStart || db.settings.lastSetup?.x01?.opts?.start || 501;
+  return db.settings.lastSetup?.x01?.opts?.start || 501;
+}
+
+/** Aktuelle Einrichtung sofort merken – bleibt bis zur nächsten Änderung erhalten. */
+function rememberSetup() {
+  const s = ui.setup;
+  db.settings.lastSetup = { ...db.settings.lastSetup, [s.type]: { opts: s.opts, parts: s.parts, teams: s.teams } };
+  save();
 }
 
 function showRules(type) {
@@ -317,7 +324,6 @@ function initSetup(type) {
     .filter(p => def.bots || p.kind !== 'bot');
   if (!parts.length && db.players[0]) parts.push(partFromPlayer(db.players[0]));
   ui.setup = { type, opts: { ...def.defaults, ...(last?.opts || {}) }, parts, teams: !!(last?.teams && def.teams) };
-  ui.optsOpen = false;
 }
 
 /** Voreinstellungen aus den Schnellwahl-Knöpfen der Startseite. */
@@ -349,8 +355,6 @@ function partColor(p, i) {
 function viewSetup(type) {
   if (!ui.setup || ui.setup.type !== type) initSetup(type);
   const s = ui.setup, def = GAMES[type];
-  const many = def.options.length > 2;
-  const showOpts = !many || ui.optsOpen;
   const opts = def.options.filter(o => !o.show || o.show(s.opts)).map(o => `
     <div class="opt"><label>${typeof o.label === 'function' ? o.label(s.opts) : o.label}</label>
     <div class="seg ${o.choices.length > 6 ? 'wrap' : ''}">${o.choices.map(([v, l]) =>
@@ -358,11 +362,11 @@ function viewSetup(type) {
 
   // Spieler-Auswahl: Profile antippen (Reihenfolge = Wurfreihenfolge), Gäste/Bots mit ✕ entfernen
   const selectedChips = s.parts.map((p, i) => (p.kind === 'human'
-    ? `<button class="pchip on" data-action="toggle-player" data-id="${p.playerId}" style="--c:${partColor(p, i)}" aria-pressed="true"><span class="num">${i + 1}</span>${esc(partName(p))}</button>`
+    ? `<button class="pchip on" data-action="toggle-player" data-id="${p.playerId}" style="--c:${partColor(p, i)}" aria-pressed="true"><span class="num">${i + 1}</span>${miniIcon(p.playerId)}${esc(partName(p))}</button>`
     : `<button class="pchip on" data-action="part-del" data-i="${i}" style="--c:${partColor(p, i)}" aria-label="${esc(partName(p))} entfernen">
       <span class="num">${i + 1}</span>${p.kind === 'bot' ? icon('bot', 'xs') + ' ' : ''}${esc(partName(p))}${icon('x', 'xs')}</button>`)).join('');
   const otherChips = db.players.filter(p => !s.parts.some(x => x.playerId === p.id))
-    .map(p => `<button class="pchip" data-action="toggle-player" data-id="${p.id}" style="--c:${p.color}">${dot(p.color)}${esc(p.name)}</button>`).join('');
+    .map(p => `<button class="pchip" data-action="toggle-player" data-id="${p.id}" style="--c:${p.color}">${miniIcon(p.id) || dot(p.color)}${esc(p.name)}</button>`).join('');
 
   const teamBox = t => `<div class="team-box t${t}"><div class="team-title">Team ${t + 1}</div>
     ${s.parts.map((p, i) => (p.team === t ? `<button class="team-member" data-action="part-team" data-i="${i}">${dot(partColor(p, i))}${esc(partName(p))}<span class="muted">⇄</span></button>` : '')).join('') || '<span class="muted small">leer</span>'}</div>`;
@@ -385,8 +389,8 @@ function viewSetup(type) {
   </section>
 
   <section class="card">
-    <div class="row between"><h3>Einstellungen</h3>${many ? `<button class="btn ghost sm" data-action="toggle-opts">${ui.optsOpen ? 'Fertig' : `${icon('edit')} Anpassen`}</button>` : ''}</div>
-    ${showOpts ? opts : `<button class="opt-summary" data-action="toggle-opts">${esc(type === 'x01' ? x01Summary(s.opts) : variantOf(type, s.opts).label)}</button>`}
+    <h3>Einstellungen</h3>
+    ${opts}
   </section>
 
   <div class="setup-cta">
@@ -411,7 +415,7 @@ function setupError() {
 function startFromSetup() {
   const s = ui.setup;
   if (setupError()) return;
-  db.settings.lastSetup = { ...db.settings.lastSetup, [s.type]: { opts: s.opts, parts: s.parts, teams: s.teams } };
+  rememberSetup();
   const players = s.parts.map((p, i) => ({
     name: partName(p), playerId: p.kind === 'human' ? p.playerId : null, kind: p.kind, level: p.level || null, color: partColor(p, i),
   }));
@@ -430,6 +434,7 @@ function startFromSetup() {
   }
   db.current = { state: st, undo: [] };
   save();
+  if (st.type === 'x01') caller.gameOn(st.players[activeIndex(st)].name);
   go('#/game');
 }
 
@@ -469,7 +474,7 @@ function viewX01(st) {
     const mi = S.members[S.ptr];
     const ps = st.stats[mi];
     const color = st.players[S.members[0]].color;
-    const names = S.members.map((m, k) => `<span class="${k === S.ptr ? 'cur' : ''}">${st.players[m].kind === 'bot' ? icon('bot', 'xs') : ''}${esc(st.players[m].name)}</span>`).join('<i>&</i>');
+    const names = S.members.map((m, k) => `<span class="${k === S.ptr ? 'cur' : ''}">${st.players[m].kind === 'bot' ? icon('bot', 'xs') : miniIcon(st.players[m].playerId)}${esc(st.players[m].name)}</span>`).join('<i>&</i>');
     const last = L.lastScores?.[si];
     return `<div class="sb-row ${isAct ? 'act' : ''}" style="--pc:${color}">
       <div class="sb-name"><span class="sb-names">${names}</span>
@@ -558,7 +563,7 @@ function viewTraining(st) {
       case 'c121': main = q.success; sub = q.done ? 'fertig' : `Ziel ${q.target} · Versuch ${q.attempt + 1}/${st.config.attempts}`; break;
     }
     return `<div class="sb-row ${i === st.turn && !st.finished ? 'act' : ''} ${q.done ? 'done' : ''}" style="--pc:${x.color}">
-      <div class="sb-name"><span class="sb-names"><span class="cur">${esc(x.name)}</span></span><span class="sb-meta">${sub}</span></div>
+      <div class="sb-name"><span class="sb-names"><span class="cur">${miniIcon(x.playerId)}${esc(x.name)}</span></span><span class="sb-meta">${sub}</span></div>
       <div class="sb-score sm">${main}</div></div>`;
   }).join('');
 
@@ -650,19 +655,24 @@ function onVisit(st, v, legBefore) {
     L.lastScores[v.side] = v.bust ? 'Bust' : v.score;
   }
   if (v.checkout) {
-    say('Game shot');
     if (!st.finished && st.legEvent) {
       const S = st.sides[st.legEvent.side];
       const who = S.members.map(m => st.players[m].name).join(' & ');
       toast(`${icon('trophy')} <b>${esc(who)}</b> gewinnt ${st.legEvent.setWon ? 'das Set' : 'das Leg'}<br><span class="small">${st.legEvent.darts} Darts · Checkout ${st.legEvent.checkout}</span>`, 'big', 2600);
+      caller.leg(who, legBefore, st.legEvent.setWon);
     }
-  } else if (v.bust) {
-    say('Bust');
+    return;
+  }
+  if (v.bust) {
+    caller.score(0, true);
     toast('Bust!', 'bad');
   } else {
-    say(v.score === 0 ? 'No score' : v.score);
+    caller.score(v.score);
     if (v.score === 180) toast('🎯 ONE HUNDRED AND EIGHTY!', 'big', 2200);
   }
+  // Ansager: „Paul, you require 121“, wenn der nächste Spieler checken kann
+  const side = L.turn, rem = L.rem[side];
+  if (L.opened[side] && checkoutRoute(rem, 3, st.config.out)) caller.require(st.players[activeIndex(st)].name, rem);
 }
 
 function undo() {
@@ -718,7 +728,7 @@ function finishGame() {
   save();
   if (st.type === 'x01') {
     const w = st.sides[st.winner];
-    say(`Game shot and the match. ${w.members.map(m => st.players[m].name).join(' und ')}`);
+    caller.match(w.members.map(m => st.players[m].name).join(' and '));
   }
   go('#/result/' + rec.id);
 }
@@ -819,6 +829,7 @@ function rematch(id) {
   }
   db.current = { state: st, undo: [] };
   save();
+  if (st.type === 'x01') caller.gameOn(st.players[activeIndex(st)].name);
   go('#/game');
 }
 
@@ -833,7 +844,7 @@ function viewPlayers() {
   </section>
   ${db.players.length ? `<div class="list">${db.players.map(p => {
     const a = x01Agg(p.id), t = trainingAgg(p.id).reduce((s, e) => s + e.count, 0);
-    return `<a class="list-row" href="#/player/${p.id}"><span class="avatar" style="--c:${p.color}">${esc(p.name[0]?.toUpperCase() || '?')}</span>
+    return `<a class="list-row" href="#/player/${p.id}">${avatar(p)}
       <span class="grow"><b>${esc(p.name)}</b><span class="muted small">${a.games} Matches · ${t} Trainings</span></span>
       <span class="tmain">${a.darts ? f1(a.avg) : '–'}<small> Ø</small></span></a>`;
   }).join('')}</div>` : '<p class="muted center">Noch keine Spieler angelegt.</p>'}`;
@@ -844,9 +855,17 @@ function viewPlayer(id) {
   if (!p) return `${pageHead('Spieler', '#/players')}<p class="muted">Spieler nicht gefunden.</p>`;
   const a = x01Agg(id), tr = trainingAgg(id), games = gamesOf(id).slice(-10).reverse();
   const tile = (label, value, sub = '') => `<div class="stat"><div class="stat-v">${value}</div><div class="stat-l">${label}</div>${sub ? `<div class="muted small">${sub}</div>` : ''}</div>`;
-  return `${pageHead(`<span class="avatar" style="--c:${p.color}">${esc(p.name[0]?.toUpperCase())}</span>${esc(p.name)}`, '#/players',
+  return `${pageHead(`${avatar(p)}${esc(p.name)}`, '#/players',
     `<button class="icon-btn" data-action="rename-player" data-id="${id}" aria-label="Umbenennen">${icon('edit')}</button>`)}
-  <div class="swatches">${COLORS.map(c => `<button class="swatch ${c === p.color ? 'on' : ''}" style="--c:${c}" data-action="player-color" data-id="${id}" data-c="${c}" aria-label="Farbe ${c}"></button>`).join('')}</div>
+  <section class="card">
+    <h3>Symbol</h3>
+    <div class="icon-pick">
+      <button class="${!p.icon ? 'on' : ''}" style="--c:${p.color}" data-action="player-icon" data-id="${id}" data-icon="" title="Anfangsbuchstabe" aria-label="Anfangsbuchstabe">${esc(p.name.charAt(0).toUpperCase())}</button>
+      ${Object.entries(AVATARS).map(([k, [label]]) => `<button class="${p.icon === k ? 'on' : ''}" style="--c:${p.color}" data-action="player-icon" data-id="${id}" data-icon="${k}" title="${label}" aria-label="${label}">${avatarSvg(k)}</button>`).join('')}
+    </div>
+    <h3>Farbe</h3>
+    <div class="swatches">${COLORS.map(c => `<button class="swatch ${c === p.color ? 'on' : ''}" style="--c:${c}" data-action="player-color" data-id="${id}" data-c="${c}" aria-label="Farbe ${c}"></button>`).join('')}</div>
+  </section>
 
   <h3 class="section-title">X01</h3>
   ${a.games ? `<div class="stat-grid">
@@ -1034,7 +1053,14 @@ function viewSettings() {
   <section class="card">
     <div class="opt"><label>X01-Eingabe</label>${seg('inputMode', [['total', 'Gesamtpunkte'], ['darts', 'Einzeldarts']])}
       <p class="muted small">Auch im Spiel über das Symbol oben rechts umschaltbar.</p></div>
-    <div class="opt"><label>Sprachansage (Scores, Game Shot)</label>${seg('speech', [[false, 'Aus'], [true, 'An']])}</div>
+    <div class="opt"><label>Caller (englische Ansage wie im TV)</label>${seg('speech', [[false, 'Aus'], [true, 'An']])}
+      <p class="muted small">Sagt Scores an („One hundred and eighty!“), Checkouts („Paul, you require 121“) und „Game shot“.</p></div>
+    ${'speechSynthesis' in window ? `<div class="opt"><label>Stimme</label>
+      <div class="row gap wrap"><select id="caller-voice" class="input grow">
+        <option value="">Automatisch (natürlichste Stimme)</option>
+        ${englishVoices().map(v => `<option value="${esc(v.voiceURI)}" ${db.settings.callerVoice === v.voiceURI ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}
+      </select><button class="btn" data-action="caller-test">Probehören</button></div>
+      <p class="muted small">Die Stimmen kommen vom Gerät. Am natürlichsten klingen Stimmen mit „Natural“, „Online“ oder „Google“ im Namen (z. B. in Edge oder Chrome); auf dem iPhone unter Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen eine „Erweitert“-Stimme laden.</p></div>` : ''}
   </section>
   ${syncCard()}
   <section class="card">
@@ -1085,10 +1111,18 @@ const actions = {
     if (d.preset) applyPreset(d.preset);
     go('#/play/' + d.type);
   },
-  'home-start': d => { ui.homeStart = +d.v; render(); },
+  'home-start': d => {
+    const last = db.settings.lastSetup?.x01 || {};
+    db.settings.lastSetup = { ...db.settings.lastSetup, x01: { ...last, opts: { ...GAMES.x01.defaults, ...last.opts, start: +d.v } } };
+    save();
+    render();
+  },
   rules: d => showRules(d.type),
-  opt: d => { ui.setup.opts[d.key] = JSON.parse(d.value); render(); },
-  'toggle-opts': () => { ui.optsOpen = !ui.optsOpen; render(); },
+  opt: d => {
+    ui.setup.opts[d.key] = JSON.parse(d.value);
+    rememberSetup();
+    render();
+  },
   teams: d => {
     ui.setup.teams = JSON.parse(d.value);
     ui.setup.parts.forEach((p, i) => (p.team = i % 2));
@@ -1200,12 +1234,14 @@ const actions = {
       }],
     });
   },
+  'player-icon': d => { getPlayer(d.id).icon = d.icon || null; save(); render(); },
   'player-color': d => { getPlayer(d.id).color = d.c; save(); render(); },
   'delete-player': d => confirmBox('Spieler löschen?', 'Das Profil wird entfernt. Gespielte Spiele bleiben in der Historie erhalten.', 'Löschen', () => {
     deletePlayer(d.id);
     go('#/players');
   }),
   sort: d => { ui.statsSort = d.k; render(); },
+  'caller-test': () => caller.test(),
   range: d => { ui.range = d.v; render(); },
   setting: d => { db.settings[d.key] = JSON.parse(d.value); save(); render(); },
   export: () => {
@@ -1245,6 +1281,7 @@ document.addEventListener('submit', e => {
 });
 
 document.addEventListener('change', e => {
+  if (e.target.id === 'caller-voice') { db.settings.callerVoice = e.target.value || null; save(); caller.test(); return; }
   if (e.target.id !== 'import-file') return;
   const file = e.target.files[0];
   if (!file) return;
@@ -1298,5 +1335,6 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && route.name === 'game') { ui.wake = null; keepAwake(); }
 });
 
+onVoices(() => { if (route.name === 'settings') render(); });
 render();
 initSync(onSyncChange);
