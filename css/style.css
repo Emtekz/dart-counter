@@ -19,7 +19,7 @@
   --good: #22c55e;
   --amber: #f59e0b;
   --danger: #ff4053;
-  --double: #ff1f3d;
+  --double: #e3122f;
   --triple: #16a34a;
 
   /* Aliase für bestehende Komponenten (Diagramme etc.) */
@@ -31,7 +31,7 @@
   --accent-2: var(--red-2);
   --accent-soft: #ff4d63;
   --accent-ink: #ffffff;
-  --accent-glow: 0 8px 26px rgba(255, 31, 61, .35);
+  --accent-glow: 0 8px 26px color-mix(in srgb, var(--red) 35%, transparent);
   --shadow: 0 14px 40px rgba(0, 0, 0, .55);
   --radius: 3px;
 
@@ -42,11 +42,25 @@
   color-scheme: dark;
 }
 
+/* Farbthema „Bordeaux / Purpur“ (umschaltbar unter Optionen) */
+[data-theme="bordeaux"] {
+  --red: #d81b4a;
+  --red-2: #5e1e8c;
+  --red-deep: #4a1466;
+  --accent-soft: #e8557a;
+  --bg: #0a0709;
+  --panel: #140e13;
+  --panel-2: #1c141b;
+  --panel-3: #271c26;
+  --line: #33242f;
+  --muted: #a3929f;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
   background:
-    radial-gradient(900px 420px at 85% -160px, rgba(255, 31, 61, .18), transparent 70%) no-repeat,
+    radial-gradient(900px 420px at 85% -160px, color-mix(in srgb, var(--red) 18%, transparent), transparent 70%) no-repeat,
     var(--bg);
   color: var(--text);
   font-family: var(--body);
@@ -349,7 +363,7 @@ a.list-row:hover { border-left-color: var(--red); background: var(--panel-2); }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   font-family: var(--display); font-size: .9rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #7d6b71;
 }
-.nav-item.active { color: #fff; background: linear-gradient(180deg, rgba(255, 31, 61, .28), transparent); }
+.nav-item.active { color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--red) 28%, transparent), transparent); }
 .nav-item.active .ico { color: var(--red); }
 
 /* ---------- Spieler & Statistik ---------- */
@@ -378,7 +392,7 @@ a.list-row:hover { border-left-color: var(--red); background: var(--panel-2); }
 .winner {
   flex-direction: row; align-items: center; gap: 16px;
   border: 0; border-left: 6px solid var(--pc);
-  background: linear-gradient(100deg, rgba(255, 31, 61, .32), rgba(255, 31, 61, .04) 70%), var(--panel);
+  background: linear-gradient(100deg, color-mix(in srgb, var(--red) 32%, transparent), color-mix(in srgb, var(--red-2) 8%, transparent) 70%), var(--panel);
 }
 .winner .ico.lg { color: var(--gold); }
 .winner-name { font-family: var(--display); font-size: 2.6rem; font-weight: 900; font-style: italic; text-transform: uppercase; line-height: 1; }
@@ -510,7 +524,7 @@ body.in-game { overflow: hidden; }
 
 .bot-pad {
   align-items: center; justify-content: center; gap: 14px; padding: 20px;
-  background: repeating-linear-gradient(115deg, rgba(255, 31, 61, .07) 0 14px, transparent 14px 28px), var(--panel);
+  background: repeating-linear-gradient(115deg, color-mix(in srgb, var(--red) 7%, transparent) 0 14px, transparent 14px 28px), var(--panel);
   border: 1px solid var(--line);
 }
 .bot-think { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 1.6rem; font-weight: 800; text-transform: uppercase; }
@@ -522,7 +536,7 @@ body.in-game { overflow: hidden; }
   grid-area: focus; position: relative; align-self: start;
   display: flex; flex-direction: column; align-items: center; text-align: center;
   padding: 12px 14px;
-  background: repeating-linear-gradient(115deg, rgba(255, 31, 61, .06) 0 16px, transparent 16px 32px), var(--panel);
+  background: repeating-linear-gradient(115deg, color-mix(in srgb, var(--red) 6%, transparent) 0 16px, transparent 16px 32px), var(--panel);
   border: 1px solid var(--line); border-left: 6px solid var(--pc);
 }
 .focus-who { font-family: var(--display); font-size: 1.15rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
@@ -683,3 +697,14 @@ body.in-game { overflow: hidden; }
 .bull-res.miss { background: var(--panel-3); color: var(--muted); }
 .bull-row.win .bull-res { box-shadow: 0 0 0 2px var(--gold); }
 .bull-tie { border-left: 4px solid var(--gold); }
+
+/* ---------- Checkout-Banner (TV-Stil) ---------- */
+.co-banner { display: grid; grid-template-columns: auto 1fr; background: #000; border: 1px solid #2a2014; }
+.co-banner .co-lab { writing-mode: vertical-rl; transform: rotate(180deg); background: var(--gold); color: #1a1200; font-family: var(--display); font-weight: 900; letter-spacing: .2em; font-size: .8rem; text-align: center; padding: 6px 3px; text-transform: uppercase; }
+.co-banner .co-darts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.co-banner .co-d { padding: 5px 4px 7px; text-align: center; border-left: 1px solid #2a2014; min-width: 0; }
+.co-banner .co-d small { display: block; font-family: var(--display); font-weight: 700; font-size: .7rem; letter-spacing: .14em; color: #8a7a55; text-transform: uppercase; }
+.co-banner .co-d b { font-family: var(--display); font-size: 2rem; font-weight: 900; font-style: italic; color: var(--gold); line-height: 1.05; }
+.co-banner .co-d.next { background: linear-gradient(180deg, rgba(255, 194, 61, .2), transparent); }
+.co-banner .co-d.done b { color: #6b5f47; font-size: 1.5rem; }
+.co-banner .co-d.empty b { color: #2c261c; }

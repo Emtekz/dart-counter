@@ -10,7 +10,8 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
 - **X01** – 101, 301, 501, 701, 901
   - Straight In / Double In, Double Out / Single Out / Master Out
   - Legs oder Sets (First to …)
-  - Checkout-Vorschläge für jeden Restwert
+  - Checkout-Vorschläge nach Profi-Tabelle als TV-Banner (ein Feld pro Dart)
+  - Ausbullen, wer das Match beginnt
   - Eingabe als Gesamtpunktzahl (Ziffernblock + Schnelltasten) oder Dart für Dart
 - **Allein, gegeneinander (bis 8 Spieler), im Doppel (Teams, z. B. 2 vs 2) oder gegen den Dartbot**
 - **Dartbot** in 10 Stufen (ca. Ø 25 bis Ø 100), simuliert echte Streuung auf dem Board
@@ -37,7 +38,7 @@ Moderner Dart-Punktezähler als Web-App – läuft im Browser auf Handy, Tablet 
 - Spielhistorie mit Detailansicht und Revanche
 - Rückgängig-Funktion, Spiel pausieren und später fortsetzen
 - Englischer Caller wie im TV („One hundred and eighty!“, „Paul, you require 121“, „Game shot!“) mit Auswahl der Stimme
-- „Broadcast“-Design im Stil von TV-Dartgrafiken (Schrift Barlow Condensed, lokal eingebunden)
+- „Broadcast“-Design im Stil von TV-Dartgrafiken (Schrift Barlow Condensed, lokal eingebunden), Farbe Rot oder Bordeaux/Purpur
 - Daten-Export/Import (JSON) – alle Daten bleiben lokal im Browser (localStorage)
 
 ## Tastatur (am PC)

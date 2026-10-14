@@ -179,6 +179,7 @@ function confirmBox(title, text, okLabel, onOk, danger = true) {
 
 function render() {
   const r = route.name;
+  applyTheme();
   if (r !== 'game') stopBot();
   resetCharts();
   let html;
@@ -199,6 +200,15 @@ function render() {
   if (r === 'bulloff') scheduleBullBot();
   document.body.classList.toggle('in-game', inGame);
   if (inGame) { scheduleBot(); keepAwake(); } else releaseAwake();
+}
+
+const THEMES = { red: '#0b0809', bordeaux: '#0a0709' };
+function applyTheme() {
+  if (!THEMES[db.settings.theme]) db.settings.theme = 'red';
+  const t = db.settings.theme;
+  if (t === 'red') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEMES[t]);
 }
 
 function nav(r) {
@@ -583,11 +593,23 @@ function viewX01(st) {
     <div class="sb-info">
       <div class="sb-turn">${dot(player.color)}<b>${esc(player.name)}</b><span>am Wurf</span>
         ${db.settings.inputMode === 'darts' || bot ? `<span class="slots">${slots}</span>` : ''}</div>
-      <div class="sb-route">${route ? route.map(t => `<span>${t.label}</span>`).join('') : ''}</div>
+      ${route ? checkoutBanner(route, L.cur) : ''}
       ${lastTxt ? `<div class="sb-last">${lastTxt}</div>` : ''}
     </div>
     ${pad}
   </div>`;
+}
+
+/** Checkout-Weg als TV-Banner: ein Feld pro Dart, bereits geworfene Darts abgehakt. */
+function checkoutBanner(route, thrown) {
+  const cells = [0, 1, 2].map(i => {
+    if (i < thrown.length) return `<div class="co-d done"><small>Dart ${i + 1}</small><b>${esc(thrown[i].label)}</b></div>`;
+    const t = route[i - thrown.length];
+    return t
+      ? `<div class="co-d ${i === thrown.length ? 'next' : ''}"><small>Dart ${i + 1}</small><b>${t.label}</b></div>`
+      : `<div class="co-d empty"><small>Dart ${i + 1}</small><b>–</b></div>`;
+  }).join('');
+  return `<div class="co-banner" aria-label="Checkout: ${route.map(t => t.label).join(', ')}"><div class="co-lab">Checkout</div><div class="co-darts">${cells}</div></div>`;
 }
 
 function x01Quick(st) {
@@ -1133,6 +1155,7 @@ function viewSettings() {
   <section class="card">
     <div class="opt"><label>X01-Eingabe</label>${seg('inputMode', [['total', 'Gesamtpunkte'], ['darts', 'Einzeldarts']])}
       <p class="muted small">Auch im Spiel über das Symbol oben rechts umschaltbar.</p></div>
+    <div class="opt"><label>Farbe</label>${seg('theme', [['red', 'Rot'], ['bordeaux', 'Bordeaux / Purpur']])}</div>
     <div class="opt"><label>Caller (englische Ansage wie im TV)</label>${seg('speech', [[false, 'Aus'], [true, 'An']])}
       <p class="muted small">Sagt Scores an („One hundred and eighty!“), Checkouts („Paul, you require 121“) und „Game shot“.</p></div>
     ${'speechSynthesis' in window ? `<div class="opt"><label>Stimme</label>
