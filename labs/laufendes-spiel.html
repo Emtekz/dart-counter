@@ -60,6 +60,48 @@
   .nav-live .ico { width: 26px; height: 26px; display: block; margin: 0 auto 2px; fill: #fff; stroke: none; }
   .nav-mock.gap { grid-template-columns: 1fr 1fr 86px 1fr 1fr; }
   .nav-pulse::after { content: ""; position: absolute; top: 12px; right: 30%; width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  /* Live-Kachel in den Favoriten */
+  .fav-live { position: relative; height: 62px; display: flex; align-items: center; gap: 10px; padding: 0 10px; background: linear-gradient(100deg, color-mix(in srgb, var(--red) 45%, var(--panel)), var(--panel-2) 80%); border: 1px solid var(--red); box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 60%, transparent); animation: ring 2s ease-out infinite; }
+  @keyframes ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
+  .fav-live .fl-tag { font-family: var(--display); font-weight: 900; font-size: .75rem; letter-spacing: .16em; background: #fff; color: #111; padding: 3px 7px; transform: skewX(-10deg); display: flex; align-items: center; gap: 5px; }
+  .fav-live .fl-tag i { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: live 1.6s infinite; }
+  .fav-live .fl-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .fav-live .fl-text b { font-family: var(--display); font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 1.15rem; line-height: 1.05; }
+  .fav-live .fl-text span { font-family: var(--display); font-weight: 700; font-size: .9rem; color: #f3d9e1; text-transform: uppercase; }
+  .fav-live .fl-go { width: 38px; height: 38px; display: grid; place-items: center; background: #fff; color: #111; clip-path: polygon(0 0, 100% 0, 86% 100%, 0 100%); }
+
+  /* Scorebug in der Headline */
+  .hero-wrap { position: relative; }
+  .scorebug { position: absolute; right: 0; top: 18px; width: 150px; display: flex; flex-direction: column; gap: 2px; z-index: 2; }
+  .scorebug .sbg-top { display: flex; justify-content: space-between; align-items: center; background: var(--red); padding: 2px 6px; font-family: var(--display); font-weight: 900; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
+  .scorebug .sbg-top span { display: flex; align-items: center; gap: 5px; }
+  .scorebug .sbg-top i { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: live 1.6s infinite; }
+  .scorebug .sbg-row { display: flex; height: 24px; }
+  .scorebug .sbg-n { flex: 1; background: #ececec; color: #111; font-family: var(--display); font-weight: 900; font-size: .95rem; text-transform: uppercase; display: flex; align-items: center; padding: 0 6px; box-shadow: inset 3px 0 0 var(--pc); }
+  .scorebug .sbg-row:not(.act) .sbg-n { background: #bdbdbd; color: #555; }
+  .scorebug .sbg-s { width: 46px; background: #000; display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-style: italic; font-size: 1.1rem; }
+  .scorebug .sbg-go { background: #000; color: var(--gold); font-family: var(--display); font-weight: 900; font-style: italic; font-size: .85rem; text-align: center; padding: 3px; letter-spacing: .08em; text-transform: uppercase; }
+
+  /* Headline wird zum Weiter-Knopf */
+  .hero-resume { position: relative; display: block; padding: 6px 0 4px; }
+  .hero-resume .hr-kicker { font-family: var(--display); font-weight: 800; letter-spacing: .3em; font-size: .9rem; color: var(--red); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .hero-resume .hr-title { font-family: var(--display); font-size: 3.3rem; font-weight: 900; font-style: italic; line-height: .88; text-transform: uppercase; }
+  .hero-resume .hr-title span { color: transparent; -webkit-text-stroke: 2px var(--red); }
+  .hero-resume .hr-title .ico { width: 34px; height: 34px; vertical-align: 2px; color: var(--red); fill: var(--red); }
+  .hero-resume .hr-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .hero-resume .hr-meta span { font-family: var(--display); font-weight: 800; font-size: 1rem; text-transform: uppercase; background: var(--panel-2); padding: 2px 9px; box-shadow: inset 3px 0 0 var(--pc, var(--red)); }
+  .hero-resume .hr-meta b { font-style: italic; }
+  .hero-resume .hr-x { position: absolute; right: 0; top: 8px; font-family: var(--display); font-size: .8rem; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; text-decoration: underline; }
+
+  /* Lasche am Rand */
+  .edge-tab { position: absolute; right: 0; top: 46%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px 12px 10px; background: linear-gradient(180deg, var(--red), var(--red-2)); box-shadow: -6px 6px 24px rgba(0,0,0,.6); clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px); z-index: 3; }
+  .edge-tab b { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); font-weight: 900; font-style: italic; letter-spacing: .12em; text-transform: uppercase; font-size: 1rem; }
+  .edge-tab small { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); font-weight: 700; font-size: .8rem; color: #f3d9e1; letter-spacing: .06em; }
+  .edge-tab i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: live 1.6s infinite; }
+  .fav-mini .fav-live .fl-text b { background: none; color: #fff; padding: 0; transform: none; }
+  .hero-resume .hr-meta { align-items: center; }
+  .hero-resume .hr-x { position: static; margin-left: auto; }
 </style>
 </head>
 <body>
@@ -67,7 +109,7 @@
   <header>
     <div class="kicker">Testseite</div>
     <h1 style="font-size:2.6rem;font-weight:900;font-style:italic">Laufendes Spiel</h1>
-    <p class="intro">Fünf Ideen, wie ein pausiertes Spiel angezeigt werden kann – jeweils auf der Startseite im Handy-Format. Beispiel: 501-Match Paul gegen Dartbot.</p>
+    <p class="intro">Neue Ideen, wie ein pausiertes Spiel angezeigt werden kann (C ist aus der letzten Runde geblieben) – jeweils auf der Startseite im Handy-Format. Beispiel: 501-Match Paul gegen Dartbot.</p>
   </header>
   <div class="grid" id="grid"></div>
 </div>
@@ -87,20 +129,23 @@ const current = `<section class="resume-card"><a class="rc-main"><span class="rc
   <div class="rc-actions"><button class="icon-btn rc-discard">${trash}</button><a class="btn primary rc-go">${play} Weiter</a></div></section>`;
 
 const V = [
-  ['A', 'Aktuell', 'Große Karte unter den Favoriten – zum Vergleich.',
-    `<div class="screen">${hero}${favs}${current}${x01}</div>${nav()}`],
-  ['B', 'Mini-Player', 'Wie bei Musik-Apps: eine schmale Leiste schwebt über der Navigation – auf jeder Seite sichtbar, nimmt auf der Startseite keinen Platz weg. Tipp öffnet das Spiel, × verwirft.',
-    `<div class="screen">${hero}${favs}${x01}</div>
-     <div class="mini-player"><div class="mp-info"><small><i class="live-dot"></i>Leg 2 · Paul am Wurf</small><b>Paul 121 : 184 Bot</b></div><span class="mp-x">${x}</span><span class="mp-go">${play}</span></div>${nav()}`],
   ['C', 'Live-Leiste oben', 'Eine einzeilige schwarze Leiste direkt unter der Headline mit „LIVE“-Marke, Spielstand und „Weiter“ – sehr kompakt.',
     `<div class="screen">${hero}<div class="live-strip"><span class="ls-tag"><i class="live-dot" style="background:#fff;box-shadow:none"></i>LIVE</span><span class="ls-text">501 · Paul 121 <em>:</em> 184 Bot</span><span class="ls-go">Weiter ›</span></div>${favs}${x01}</div>${nav()}`],
-  ['D', 'Mini-Scoreboard', 'Ein kleines TV-Scoreboard wie in der Ecke einer Übertragung: Namensbalken, Legs, Restpunkte – darunter Weiter und Verwerfen.',
-    `<div class="screen">${hero}<div class="mini-sb"><div class="msb-top"><span><i class="live-dot"></i>Laufendes Spiel · 501 · Leg 2</span></div>
-      <div class="msb-row act" style="--pc:#ef233c"><div class="msb-name">Paul</div><div class="msb-legs">1</div><div class="msb-score">121</div></div>
-      <div class="msb-row" style="--pc:#94a3b8"><div class="msb-name">Dartbot 5</div><div class="msb-legs">0</div><div class="msb-score">184</div></div>
-      <div class="msb-go"><button class="btn ghost" style="flex:0 0 auto">${trash}</button><button class="btn primary">${play} Weiter</button></div></div>${favs}${x01}</div>${nav()}`],
-  ['E', 'Live-Knopf in der Navigation', 'Die Startseite bleibt komplett frei. Läuft ein Spiel, erscheint mittig in der Navigation ein runder „Weiter“-Knopf – ein Tipp, und man ist zurück im Spiel.',
-    `<div class="screen">${hero}${favs}${x01}</div><a class="nav-live">${play}Weiter</a>${nav('gap')}`],
+  ['B', 'Live-Kachel in den Favoriten', 'Das laufende Spiel sitzt als erste Kachel in der Favoriten-Reihe – rot, mit pulsierendem Rand und „LIVE“-Marke. Kein eigener Block nötig.',
+    `<div class="screen">${hero}<div class="block-head"><h2>Favoriten</h2></div>
+      <div class="fav-mini"><a class="fav-live"><span class="fl-tag"><i></i>LIVE</span><span class="fl-text"><b>501 · Leg 2</b><span>Paul 121 : 184 Bot</span></span><span class="fl-go">${play}</span></a><div><b>27</b>Bob's 27</div><div><b>121</b>Checkout 121</div></div>${x01}</div>${nav()}`],
+  ['D', 'Scorebug in der Headline', 'Ein kleines TV-Ecklogo im freien Bereich rechts neben „GAME ON.“: Namen, Restpunkte, „Weiter“. Die Startseite bleibt darunter unverändert.',
+    `<div class="screen"><div class="hero-wrap">${hero}<a class="scorebug"><div class="sbg-top"><span><i></i>Live</span><span>501 · Leg 2</span></div>
+      <div class="sbg-row act" style="--pc:#ef233c"><div class="sbg-n">Paul</div><div class="sbg-s">121</div></div>
+      <div class="sbg-row" style="--pc:#94a3b8"><div class="sbg-n">Bot 5</div><div class="sbg-s">184</div></div>
+      <div class="sbg-go">Weiter ›</div></a></div>${favs}${x01}</div>${nav()}`],
+  ['E', 'Headline wird zum Weiter-Knopf', 'Läuft ein Spiel, verwandelt sich „GAME ON.“ in „WEITER SPIELEN.“ – die ganze Überschrift ist der Knopf, darunter der Spielstand. Ohne laufendes Spiel bleibt alles wie gewohnt.',
+    `<div class="screen"><a class="hero-resume"><div class="hero-stripes"></div><div class="hr-kicker"><i class="live-dot"></i>501 · Leg 2 · Paul am Wurf</div>
+      <div class="hr-title">Weiter<br><span>spielen.</span> ${play}</div>
+      <div class="hr-meta"><span style="--pc:#ef233c">Paul <b>121</b></span><span style="--pc:#94a3b8">Dartbot 5 <b>184</b></span><span class="hr-x">Verwerfen</span></div></a>
+      <div class="hero-divider"></div>${favs}${x01}</div>${nav()}`],
+  ['F', 'Lasche am Rand', 'Eine schmale „LIVE“-Lasche hängt am rechten Bildschirmrand – auf jeder Seite der App, ohne Inhalte zu verdecken. Antippen bringt dich zurück ins Spiel.',
+    `<div class="screen">${hero}${favs}${x01}</div><a class="edge-tab"><i></i><b>Weiter</b><small>501 · 121:184</small></a>${nav()}`],
 ];
 
 document.getElementById('grid').innerHTML = V.map(([n, t, d, html]) =>
